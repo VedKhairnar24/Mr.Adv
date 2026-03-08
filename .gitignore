@@ -1,0 +1,74 @@
+# ===========================================
+# Root Project - Git Ignore File
+# Mr.Adv - Advocate Case Management System
+# ===========================================
+
+# This is the root .gitignore file.
+# Each subdirectory (backend/, frontend/) has its own .gitignore file.
+
+# Subdirectories with their own .gitignore
+backend/
+frontend/
+
+# Documentation and temporary files
+*.tmp
+*.temp
+~*
+.DS_Store
+Thumbs.db
+
+# IDE workspace files (personal settings)
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Package manager cache (root level)
+.npm/
+.yarn/
+
+# Build outputs at root level
+dist/
+build/
+out/
+
+# Logs at root level
+logs/
+*.log
+npm-debug.log*
+
+# Environment files at root level
+.env
+.env.local
+.env.*.local
+
+# Database files (if any at root)
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary working directories
+tmp/
+temp/
+
+# Test files (if created at root)
+coverage/
+.nyc_output/
+
+# Misc
+*.pem
+*.key
+*.crt
+
+# ===========================================
+# Note:
+# Backend and Frontend have their own
+# specific .gitignore files for their
+# respective needs. Check those files
+# for complete ignore rules.
+# ===========================================

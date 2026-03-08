@@ -1,0 +1,129 @@
+Project Name: Advocate Case Management System (Mr.Adv)
+
+Purpose:
+To help advocates manage cases, clients, documents, and evidence digitally.
+This system provides a centralized web-based platform for advocates to store case information,
+upload evidence and documents, track hearing dates, maintain client records, and add case notes.
+
+Problem Statement:
+Advocates handle many cases at the same time and must manage:
+- Case documents (petitions, affidavits, legal documents)
+- Evidence (images, videos, audio, files)
+- Hearing dates (court schedules)
+- Client information (personal and contact details)
+- Case notes (advocate's private notes)
+
+Most advocates store this information in physical files or scattered folders,
+which makes it hard to manage efficiently.
+
+Solution:
+A web-based Advocate Case Management System that allows advocates to:
+- Store case information
+- Upload evidence and documents
+- Track hearing dates
+- Maintain client records
+- Add case notes
+- Access everything securely from one place
+
+Tech Stack:
+Frontend: React.js
+Backend: Node.js + Express
+Database: MySQL
+File Storage: Local server / Cloud
+Authentication: JWT (JSON Web Tokens)
+Styling: Tailwind CSS
+
+System Users:
+- Advocate (Primary user who manages cases)
+- Assistant/Clerk (Optional in future versions)
+- Admin (Optional in future versions)
+
+Core Modules:
+1. Authentication - Advocate login & security
+2. Client Management - Store client details
+3. Case Management - Manage cases
+4. Document Management - Upload case documents
+5. Evidence Management - Store evidence files
+6. Hearing Schedule - Track court dates
+7. Notes - Advocate case notes
+8. Dashboard - Overview of cases
+
+Core Features:
+
+1. Advocate Account
+   - Register advocate
+   - Login
+   - Logout
+   - Profile management
+
+2. Client Management
+   - Add client
+   - Edit client details
+   - View client list
+   - Delete client
+
+3. Case Management
+   - Create new case
+   - Assign client to case
+   - Update case status
+   - View case details
+
+4. Evidence Management
+   - Upload evidence
+   - Attach evidence to case
+   - Add evidence description
+
+5. Document Storage
+   - Upload PDF files
+   - Download documents
+   - Organize by case
+
+6. Hearing Management
+   - Add hearing date
+   - Update hearing status
+   - Show upcoming hearings
+
+7. Notes
+   - Add private notes
+   - Edit notes
+   - Delete notes
+
+Basic Pages:
+- Login Page - Advocate login
+- Dashboard - Case overview
+- Clients Page - Manage clients
+- Cases Page - Manage cases
+- Documents Page - Upload documents
+- Evidence Page - Manage evidence
+- Hearings Page - Court dates
+
+System Flow:
+Advocate Login → Dashboard → Create Client → Create Case → Upload Documents/Evidence → Add Hearing Dates → Add Case Notes
+
+Minimum Viable Product (MVP) - Version 1 Priorities:
+
+HIGH Priority:
+- Login system
+- Client management
+- Case management
+- Document upload
+
+MEDIUM Priority:
+- Evidence upload
+- Hearing dates
+
+LOW Priority:
+- Notes
+
+Project Folder Structure:
+advocate-case-system/
+├── frontend/          (React.js application)
+├── backend/           (Node.js + Express API)
+├── database/          (MySQL schemas and scripts)
+└── documentation/     (Project documentation)
+
+Next Steps:
+Step 2: Database Design
+Step 3: Backend Setup
+Step 4: Frontend Setup
+Step 5: Integration & Testing
