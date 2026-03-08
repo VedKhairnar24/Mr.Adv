@@ -1,0 +1,309 @@
+# Authentication Test Script
+
+This file contains test cases for the authentication API.
+
+## Prerequisites
+
+1. Server must be running: `npm run dev`
+2. MySQL database must be connected
+3. Database `advocate_case_db` must exist
+
+---
+
+## Test Case 1: Register New Advocate
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test Advocate",
+  "email": "test@law.com",
+  "password": "test123",
+  "phone": "9876543210"
+}
+```
+
+**Expected Response (201):**
+```json
+{
+  "message": "Advocate registered successfully",
+  "advocateId": 2
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 2: Register with Duplicate Email
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Another Advocate",
+  "email": "test@law.com",
+  "password": "test123",
+  "phone": "9876543211"
+}
+```
+
+**Expected Response (409):**
+```json
+{
+  "message": "Email already exists"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 3: Register with Missing Fields
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Incomplete User",
+  "email": "incomplete@law.com"
+}
+```
+
+**Expected Response (400):**
+```json
+{
+  "message": "Name, email, and password are required"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 4: Login with Valid Credentials
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@law.com",
+  "password": "test123"
+}
+```
+
+**Expected Response (200):**
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "advocate": {
+    "id": 2,
+    "name": "Test Advocate",
+    "email": "test@law.com",
+    "phone": "9876543210"
+  }
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail  
+**Token Received:** _______________________________
+
+---
+
+## Test Case 5: Login with Invalid Email
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "wrong@law.com",
+  "password": "test123"
+}
+```
+
+**Expected Response (401):**
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 6: Login with Wrong Password
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@law.com",
+  "password": "wrongpassword"
+}
+```
+
+**Expected Response (401):**
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 7: Access Profile Without Token
+
+**Request:**
+```http
+GET http://localhost:5000/api/auth/profile
+```
+
+**Expected Response (401):**
+```json
+{
+  "message": "Access denied. No token provided."
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 8: Access Profile With Valid Token
+
+**Headers:**
+```
+Authorization: Bearer YOUR_TOKEN_FROM_TEST_4
+```
+
+**Request:**
+```http
+GET http://localhost:5000/api/auth/profile
+```
+
+**Expected Response (200):**
+```json
+{
+  "advocate": {
+    "id": 2,
+    "name": "Test Advocate",
+    "email": "test@law.com",
+    "phone": "9876543210",
+    "created_at": "2026-03-07T..."
+  }
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 9: Access Profile With Invalid Token
+
+**Headers:**
+```
+Authorization: Bearer invalid_token_here
+```
+
+**Request:**
+```http
+GET http://localhost:5000/api/auth/profile
+```
+
+**Expected Response (403):**
+```json
+{
+  "message": "Invalid token"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Test Case 10: Login with Missing Fields
+
+**Request:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@law.com"
+}
+```
+
+**Expected Response (400):**
+```json
+{
+  "message": "Email and password are required"
+}
+```
+
+**Status:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Manual Testing Checklist
+
+After completing all tests:
+
+- [ ] Registration works with valid data
+- [ ] Registration rejects duplicate emails
+- [ ] Registration validates required fields
+- [ ] Login works with valid credentials
+- [ ] Login rejects invalid credentials
+- [ ] Login validates required fields
+- [ ] Profile route requires authentication
+- [ ] Profile returns user data with valid token
+- [ ] Profile rejects invalid tokens
+- [ ] Password is NOT returned in any response
+- [ ] Token contains user ID and email
+
+---
+
+## Automated Testing (Optional)
+
+You can use tools like:
+- **Postman**: Import this file as collection
+- **Thunder Client**: VS Code extension
+- **Insomnia**: REST API client
+- **curl**: Command line tool
+
+Example curl command:
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test User","email":"test@example.com","password":"123456","phone":"1234567890"}'
+```
+
+---
+
+## Results Summary
+
+Total Tests: 10  
+Passed: ___ / 10  
+Failed: ___ / 10  
+
+**Overall Status:** ⬜ All Passed / ⬜ Some Failed
+
+**Notes:**
+_______________________________________
+_______________________________________
+_______________________________________

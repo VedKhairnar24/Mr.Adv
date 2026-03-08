@@ -7,8 +7,7 @@
 # Each subdirectory (backend/, frontend/) has its own .gitignore file.
 
 # Subdirectories with their own .gitignore
-backend/
-frontend/
+
 
 # Documentation and temporary files
 *.tmp
