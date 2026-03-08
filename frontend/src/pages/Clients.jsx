@@ -22,7 +22,7 @@ function Clients() {
 
   const fetchClients = async () => {
     try {
-      const response = await API.get('/clients');
+      const response = await API.get('/clients/all');
       setClients(response.data);
     } catch (error) {
       if (error.response?.status === 401) {
@@ -54,7 +54,7 @@ function Clients() {
     }
 
     try {
-      await API.post('/clients', formData);
+      await API.post('/clients/create', formData);
       toast.success('Client added successfully');
       setFormData({ name: '', phone: '', email: '', address: '' });
       setShowAddForm(false);
