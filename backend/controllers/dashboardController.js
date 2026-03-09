@@ -105,28 +105,47 @@ exports.getDashboard = (req, res) => {
 
               dashboardData.recentDocuments = docsResult[0].recentDocuments || 0;
 
-              // Query 7: Recent cases (last 30 days)
-              const recentCasesQuery = `
-                SELECT id, case_title, case_number, status, created_at
-                FROM cases
-                WHERE advocate_id = ?
-                ORDER BY created_at DESC
-                LIMIT 5
+              // Query 7: Total documents count (all time)
+              const totalDocsQuery = `
+                SELECT COUNT(*) AS totalDocuments 
+                FROM documents 
+                WHERE case_id IN (SELECT id FROM cases WHERE advocate_id = ?)
               `;
 
-              db.query(recentCasesQuery, [advocateId], (err, recentCasesResult) => {
+              db.query(totalDocsQuery, [advocateId], (err, totalDocsResult) => {
                 if (err) {
-                  console.error('Recent cases query error:', err);
+                  console.error('Total documents query error:', err);
                   return res.status(500).json({ 
                     message: 'Failed to fetch dashboard data',
                     error: err.message 
                   });
                 }
 
-                dashboardData.recentCases = recentCasesResult;
+                dashboardData.totalDocuments = totalDocsResult[0].totalDocuments || 0;
 
-                // Return complete dashboard data
-                res.json(dashboardData);
+                // Query 8: Recent cases (last 30 days)
+                const recentCasesQuery = `
+                  SELECT id, case_title, case_number, status, created_at
+                  FROM cases
+                  WHERE advocate_id = ?
+                  ORDER BY created_at DESC
+                  LIMIT 5
+                `;
+
+                db.query(recentCasesQuery, [advocateId], (err, recentCasesResult) => {
+                  if (err) {
+                    console.error('Recent cases query error:', err);
+                    return res.status(500).json({ 
+                      message: 'Failed to fetch dashboard data',
+                      error: err.message 
+                    });
+                  }
+
+                  dashboardData.recentCases = recentCasesResult;
+
+                  // Return complete dashboard data
+                  res.json(dashboardData);
+                });
               });
             });
           });

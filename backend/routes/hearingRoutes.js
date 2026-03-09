@@ -12,6 +12,13 @@ const hearingController = require('../controllers/hearingController');
 router.post('/add', verifyToken, hearingController.addHearing);
 
 /**
+ * @route   GET /api/hearings/upcoming
+ * @desc    Get upcoming hearings for dashboard (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/upcoming', verifyToken, hearingController.getUpcomingHearings);
+
+/**
  * @route   GET /api/hearings/:caseId
  * @desc    Get all hearings for a case (Protected route)
  * @access  Private (Requires JWT token)
@@ -31,12 +38,5 @@ router.put('/status/:id', verifyToken, hearingController.updateHearingStatus);
  * @access  Private (Requires JWT token)
  */
 router.delete('/:id', verifyToken, hearingController.deleteHearing);
-
-/**
- * @route   GET /api/hearings/upcoming
- * @desc    Get upcoming hearings for dashboard (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/upcoming', verifyToken, hearingController.getUpcomingHearings);
 
 module.exports = router;

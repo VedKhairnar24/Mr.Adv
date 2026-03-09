@@ -12,11 +12,39 @@ const caseController = require('../controllers/caseController');
 router.post('/create', verifyToken, caseController.createCase);
 
 /**
+ * @route   GET /api/cases
+ * @desc    Get all cases for logged-in advocate (root path)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/', verifyToken, caseController.getCases);
+
+/**
  * @route   GET /api/cases/all
  * @desc    Get all cases for logged-in advocate (Protected route)
  * @access  Private (Requires JWT token)
  */
 router.get('/all', verifyToken, caseController.getCases);
+
+/**
+ * @route   GET /api/cases/count
+ * @desc    Get total case count (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/count', verifyToken, caseController.getCaseCount);
+
+/**
+ * @route   GET /api/cases/search?q=keyword
+ * @desc    Search cases by title, number, or client name (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/search', verifyToken, caseController.searchCases);
+
+/**
+ * @route   GET /api/cases/filter?status=Active
+ * @desc    Filter cases by status (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/filter', verifyToken, caseController.filterCasesByStatus);
 
 /**
  * @route   GET /api/cases/:id
@@ -47,31 +75,10 @@ router.put('/:id', verifyToken, caseController.updateCase);
 router.delete('/:id', verifyToken, caseController.deleteCase);
 
 /**
- * @route   GET /api/cases/search?q=keyword
- * @desc    Search cases by title, number, or client name (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/search', verifyToken, caseController.searchCases);
-
-/**
- * @route   GET /api/cases/filter?status=Active
- * @desc    Filter cases by status (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/filter', verifyToken, caseController.filterCasesByStatus);
-
-/**
  * @route   PUT /api/cases/:id/status
  * @desc    Update case status (Protected route)
  * @access  Private (Requires JWT token)
  */
 router.put('/:id/status', verifyToken, caseController.updateCaseStatus);
-
-/**
- * @route   GET /api/cases/count
- * @desc    Get total case count (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/count', verifyToken, caseController.getCaseCount);
 
 module.exports = router;

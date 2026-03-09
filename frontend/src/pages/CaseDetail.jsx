@@ -48,7 +48,7 @@ function CaseDetail() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("title", uploadTitle);
-      formData.append("caseId", id);
+      formData.append("case_id", id);  // Changed from "caseId" to "case_id"
 
       await API.post("/documents/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
