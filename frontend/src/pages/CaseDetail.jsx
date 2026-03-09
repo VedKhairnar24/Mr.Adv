@@ -4,6 +4,8 @@ import API from "../services/api";
 import toast from "react-hot-toast";
 import AddHearing from "../components/AddHearing";
 import HearingList from "../components/HearingList";
+import CaseTimeline from "../components/CaseTimeline";
+import DocumentList from "../components/DocumentList";
 
 function CaseDetail() {
   const { id } = useParams();
@@ -16,6 +18,35 @@ function CaseDetail() {
   const [uploading, setUploading] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // PDF Viewer modal state
+  const [viewerDoc, setViewerDoc] = useState(null);
+
+  // Status update state
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const statusOptions = ["Pending", "Active", "On Hold", "Closed", "Disposed"];
+  const statusColors = {
+    Pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    Active: "bg-green-100 text-green-800 border-green-300",
+    "On Hold": "bg-orange-100 text-orange-800 border-orange-300",
+    Closed: "bg-gray-100 text-gray-800 border-gray-300",
+    Disposed: "bg-red-100 text-red-800 border-red-300",
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === caseData.status) return;
+    try {
+      setUpdatingStatus(true);
+      await API.put(`/cases/status/${id}`, { status: newStatus });
+      setCaseData((prev) => ({ ...prev, status: newStatus }));
+      toast.success(`Status updated to "${newStatus}"`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update status");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const loadCase = async () => {
     try {
@@ -33,6 +64,33 @@ function CaseDetail() {
     } catch (error) {
       console.error("Error loading documents:", error);
     }
+  };
+
+  const deleteDocument = async (docId) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    try {
+      await API.delete(`/documents/${docId}`);
+      toast.success("Document deleted successfully");
+      loadDocuments();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete document");
+    }
+  };
+
+  // Build the correct URL for a document (handles both / and \ path separators)
+  const getDocUrl = (filePath) => {
+    const normalized = filePath.replace(/\\/g, '/').replace(/^\//, '');
+    return `http://localhost:5000/${normalized}`;
+  };
+
+  // Check if a document is a PDF
+  const isPdf = (doc) => {
+    return doc.file_type?.toLowerCase().includes('pdf') || doc.file_path?.toLowerCase().endsWith('.pdf');
+  };
+
+  // Check if a document is an image
+  const isImage = (doc) => {
+    return doc.file_type?.includes('image') || doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
   };
 
   const uploadDocument = async (e) => {
@@ -139,15 +197,24 @@ function CaseDetail() {
           </div>
           
           <div>
-            <p className="text-sm text-gray-500">Status</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-              caseData.status === "Active" ? "bg-green-100 text-green-800" :
-              caseData.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
-              caseData.status === "Closed" ? "bg-gray-100 text-gray-800" :
-              "bg-blue-100 text-blue-800"
-            }`}>
-              {caseData.status}
-            </span>
+            <p className="text-sm text-gray-500 mb-1">Status</p>
+            <div className="flex items-center space-x-2">
+              <select
+                value={caseData.status}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={updatingStatus}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  statusColors[caseData.status] || "bg-blue-100 text-blue-800 border-blue-300"
+                } ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {updatingStatus && (
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              )}
+            </div>
           </div>
           
           <div>
@@ -191,16 +258,13 @@ function CaseDetail() {
         </div>
       )}
 
-      {/* Documents Section */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      {/* Upload Document Section */}
+      <div className="bg-white p-6 rounded-lg shadow mb-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-900">
-          Documents
+          📤 Upload Document
         </h2>
 
-        {/* Upload Form */}
-        <form onSubmit={uploadDocument} className="mb-6 p-4 border rounded-lg bg-gray-50">
-          <h3 className="font-semibold text-gray-900 mb-3">Upload New Document</h3>
-          
+        <form onSubmit={uploadDocument} className="p-4 border rounded-lg bg-gray-50">
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Document Title
@@ -217,12 +281,12 @@ function CaseDetail() {
           
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select File (PDF, DOC, DOCX)
+              Select File (PDF, DOC, DOCX, JPG, PNG)
             </label>
             <input
               type="file"
               onChange={(e) => setSelectedFile(e.target.files[0])}
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -241,81 +305,93 @@ function CaseDetail() {
             {uploading ? "Uploading..." : "Upload Document"}
           </button>
         </form>
-
-        {documents.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
-            No documents uploaded yet
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors bg-white"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    {/* Document Icon */}
-                    <div className="flex-shrink-0">
-                      {doc.file_type?.includes('pdf') ? (
-                        <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    
-                    {/* Document Info */}
-                    <div>
-                      <p className="font-medium text-gray-900">{doc.file_name}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        Uploaded: {new Date(doc.created_at).toLocaleDateString('en-IN', { 
-                          day: 'numeric', 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {doc.file_type?.split('/')[1]?.toUpperCase() || 'Document'} • {(doc.file_size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center space-x-3">
-                    <a
-                      href={`http://localhost:7000/${doc.file_path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                    >
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      View
-                    </a>
-                    
-                    <a
-                      href={`http://localhost:7000/${doc.file_path}`}
-                      download={doc.file_name}
-                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
-                    >
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Documents Table */}
+      <DocumentList caseId={id} />
+
+      {/* ===== PDF / Image Viewer Modal ===== */}
+      {viewerDoc && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex flex-col">
+          {/* Modal Header */}
+          <div className="bg-white px-6 py-3 flex items-center justify-between shadow">
+            <div className="flex items-center space-x-3">
+              {isPdf(viewerDoc) ? (
+                <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+              )}
+              <div>
+                <h3 className="font-semibold text-gray-900">{viewerDoc.document_name}</h3>
+                <p className="text-xs text-gray-500">
+                  {isPdf(viewerDoc) ? 'PDF Document' : 'Image'} • {viewerDoc.file_size ? `${(viewerDoc.file_size / 1024).toFixed(1)} KB` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <a
+                href={getDocUrl(viewerDoc.file_path)}
+                download={viewerDoc.document_name}
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+              </a>
+              <a
+                href={getDocUrl(viewerDoc.file_path)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Open in Tab
+              </a>
+              <button
+                onClick={() => setViewerDoc(null)}
+                className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Body — PDF or Image */}
+          <div className="flex-1 overflow-auto p-2">
+            {isPdf(viewerDoc) ? (
+              <iframe
+                src={getDocUrl(viewerDoc.file_path)}
+                className="w-full h-full rounded bg-white"
+                title={viewerDoc.document_name}
+              />
+            ) : isImage(viewerDoc) ? (
+              <div className="flex items-center justify-center h-full">
+                <img
+                  src={getDocUrl(viewerDoc.file_path)}
+                  alt={viewerDoc.document_name}
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-white">
+                <p>Preview not available for this file type. Use the download button.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Case Timeline */}
+      <CaseTimeline caseId={id} />
 
       {/* Hearing Section */}
       <AddHearing caseId={id} />

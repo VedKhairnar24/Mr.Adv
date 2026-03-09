@@ -103,6 +103,35 @@ exports.getCases = (req, res) => {
 };
 
 /**
+ * Get all cases for a specific client
+ * GET /api/cases/client/:clientId
+ */
+exports.getCasesByClient = (req, res) => {
+  const clientId = req.params.clientId;
+
+  // Verify the client belongs to this advocate, then fetch cases
+  const sql = `
+    SELECT cases.*, clients.name AS client_name
+    FROM cases
+    JOIN clients ON cases.client_id = clients.id
+    WHERE cases.client_id = ? AND cases.advocate_id = ?
+    ORDER BY cases.created_at DESC
+  `;
+
+  db.query(sql, [clientId, req.advocateId], (err, result) => {
+    if (err) {
+      console.error('Get cases by client error:', err);
+      return res.status(500).json({ 
+        message: 'Error fetching client cases',
+        error: err.message 
+      });
+    }
+
+    res.json(result);
+  });
+};
+
+/**
  * Get single case by ID with full details
  * GET /api/cases/:id
  */

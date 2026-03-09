@@ -231,7 +231,7 @@ function Clients() {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 text-lg">
-                          {client.name}
+                          {client.id}. {client.name}
                         </h3>
                         <div className="mt-2 space-y-1">
                           <p className="text-sm text-gray-600">

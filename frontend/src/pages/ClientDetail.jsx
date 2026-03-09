@@ -8,6 +8,7 @@ export default function ClientDetail() {
   const navigate = useNavigate();
 
   const [client, setClient] = useState(null);
+  const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ export default function ClientDetail() {
 
   useEffect(() => {
     fetchClient();
+    fetchCases();
   }, []);
 
   const fetchClient = async () => {
@@ -45,6 +47,15 @@ export default function ClientDetail() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCases = async () => {
+    try {
+      const res = await API.get(`/cases/client/${id}`);
+      setCases(res.data);
+    } catch (error) {
+      console.error("Failed to load client cases:", error);
     }
   };
 
@@ -278,6 +289,64 @@ export default function ClientDetail() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Client Cases Section */}
+      {!editing && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-3 text-gray-900">
+            Client Cases
+          </h2>
+
+          {cases.length === 0 ? (
+            <p className="text-gray-500 bg-white rounded-lg shadow p-6 text-center">
+              No cases found for this client.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {cases.map((c) => (
+                <div
+                  key={c.id}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {c.case_title}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Case No: {c.case_number || "N/A"} • Status:{" "}
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          c.status === "Active"
+                            ? "bg-green-100 text-green-800"
+                            : c.status === "Pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : c.status === "Closed"
+                            ? "bg-gray-100 text-gray-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </p>
+                    {c.court_name && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Court: {c.court_name}
+                      </p>
+                    )}
+                  </div>
+
+                  <Link
+                    to={`/cases/${c.id}`}
+                    className="text-blue-600 hover:text-blue-800 font-medium px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    View Case
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

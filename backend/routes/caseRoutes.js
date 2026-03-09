@@ -47,6 +47,13 @@ router.get('/search', verifyToken, caseController.searchCases);
 router.get('/filter', verifyToken, caseController.filterCasesByStatus);
 
 /**
+ * @route   GET /api/cases/client/:clientId
+ * @desc    Get all cases for a specific client (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/client/:clientId', verifyToken, caseController.getCasesByClient);
+
+/**
  * @route   GET /api/cases/:id
  * @desc    Get single case by ID with full details (Protected route)
  * @access  Private (Requires JWT token)

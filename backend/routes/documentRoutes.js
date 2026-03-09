@@ -18,8 +18,15 @@ router.post(
 );
 
 /**
- * @route   GET /api/documents/:caseId
+ * @route   GET /api/documents/case/:caseId
  * @desc    Get all documents for a case (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/case/:caseId', verifyToken, documentController.getDocuments);
+
+/**
+ * @route   GET /api/documents/:caseId
+ * @desc    Get all documents for a case - legacy route (Protected route)
  * @access  Private (Requires JWT token)
  */
 router.get('/:caseId', verifyToken, documentController.getDocuments);

@@ -2,7 +2,14 @@ const multer = require('multer');
 const path = require('path');
 
 // Allowed MIME types for security
-const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const allowedDocTypes = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/jpg'
+];
 const allowedEvidenceTypes = ['image/jpeg', 'image/png', 'image/jpg', 'video/mp4', 'audio/mpeg', 'audio/mp3'];
 
 // File size limit (10MB max for production)
@@ -48,7 +55,7 @@ const fileFilter = (req, file, cb) => {
     if (allowedDocTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF and Word documents (.pdf, .doc, .docx) are allowed'), false);
+      cb(new Error('Only PDF, Word documents (.pdf, .doc, .docx) and images (.jpg, .png) are allowed'), false);
     }
   } else {
     if (allowedEvidenceTypes.includes(file.mimetype)) {
