@@ -7,6 +7,7 @@ import Cases from './pages/Cases';
 import Documents from './pages/Documents';
 import CaseDetail from './pages/CaseDetail';
 import ClientDetail from './pages/ClientDetail';
+import Landing from './pages/Landing';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -15,7 +16,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
