@@ -8,14 +8,14 @@ export default function AddHearing({ caseId }) {
   const [note, setNote] = useState("");
   const [adding, setAdding] = useState(false);
 
+  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+
   const addHearing = async (e) => {
     e.preventDefault();
-    
     if (!date || !court) {
       toast.error("Please fill in required fields");
       return;
     }
-
     try {
       setAdding(true);
       await API.post("/hearings/add", {
@@ -24,13 +24,10 @@ export default function AddHearing({ caseId }) {
         court_hall: court,
         notes: note,
       });
-
       toast.success("Hearing added successfully!");
       setDate("");
       setCourt("");
       setNote("");
-      
-      // Trigger refresh of hearing list
       window.dispatchEvent(new CustomEvent('hearingAdded'));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to add hearing");
@@ -40,59 +37,31 @@ export default function AddHearing({ caseId }) {
   };
 
   return (
-    <form onSubmit={addHearing} className="border p-4 rounded-lg mt-6 bg-gray-50">
-      <h2 className="font-bold text-lg mb-3 text-gray-900">Add Hearing</h2>
+    <form onSubmit={addHearing} className="bg-card border border-gold/10 p-5 rounded-lg mt-6">
+      <h2 className="text-sm font-bold mb-4 text-white tracking-wide">ADD HEARING</h2>
 
       <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Hearing Date *
-        </label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">HEARING DATE *</label>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} required />
       </div>
 
       <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Court Name *
-        </label>
-        <input
-          type="text"
-          value={court}
-          onChange={(e) => setCourt(e.target.value)}
-          placeholder="e.g., District Court, High Court"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">COURT NAME *</label>
+        <input type="text" value={court} onChange={(e) => setCourt(e.target.value)}
+          placeholder="e.g., District Court, High Court" className={inputClass} required />
       </div>
 
-      <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Notes
-        </label>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Brief note about the hearing..."
-          rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="mb-4">
+        <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NOTES</label>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Brief note about the hearing..." rows="3" className={inputClass} />
       </div>
 
-      <button
-        type="submit"
-        disabled={adding}
-        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-          adding
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-green-600 hover:bg-green-700 text-white"
-        }`}
-      >
-        {adding ? "Adding..." : "Add Hearing"}
+      <button type="submit" disabled={adding}
+        className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+          adding ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
+        }`}>
+        {adding ? "ADDING..." : "ADD HEARING"}
       </button>
     </form>
   );

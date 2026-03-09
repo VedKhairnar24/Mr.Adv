@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D2329;
+}
+::-webkit-scrollbar-thumb {
+  background: #163038;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4A47C;
+}
+
+/* Date & file inputs on dark bg */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+select option {
+  background: #163038;
+  color: #fff;
+}

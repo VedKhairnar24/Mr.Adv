@@ -5,7 +5,16 @@ export default {
     "./src/**/*.{js,jsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#0D2329",
+        card: "#163038",
+        gold: "#C4A47C",
+      },
+      fontFamily: {
+        sans: ['Montserrat', 'system-ui', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }

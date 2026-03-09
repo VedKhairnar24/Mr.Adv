@@ -8,7 +8,7 @@ function Clients() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [search, setSearch] = useState(""); // Search state
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -39,20 +39,15 @@ function Clients() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleAddClient = async (e) => {
     e.preventDefault();
-    
     if (!formData.name || !formData.phone) {
       toast.error('Name and phone are required');
       return;
     }
-
     try {
       await API.post('/clients/create', formData);
       toast.success('Client added successfully');
@@ -65,10 +60,7 @@ function Clients() {
   };
 
   const handleDeleteClient = async (id) => {
-    if (!confirm('Are you sure you want to delete this client? This will also delete all associated cases.')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to delete this client? This will also delete all associated cases.')) return;
     try {
       await API.delete(`/clients/${id}`);
       toast.success('Client deleted successfully');
@@ -80,197 +72,118 @@ function Clients() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading clients...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
+          <p className="mt-3 text-slate-400 text-sm">Loading clients...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              {showAddForm ? 'Cancel' : '+ Add Client'}
-            </button>
-          </div>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide">Clients</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage your clients ({clients.length})</p>
         </div>
-      </header>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+            showAddForm
+              ? 'border border-slate-600 text-slate-400 hover:border-slate-400'
+              : 'bg-gold text-primary hover:bg-gold/85'
+          }`}
+        >
+          {showAddForm ? 'CANCEL' : '+ ADD CLIENT'}
+        </button>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Add Client Form */}
-        {showAddForm && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Add New Client</h2>
-            <form onSubmit={handleAddClient}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter client name"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter phone number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter email address"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Enter address"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+      {/* Add Client Form */}
+      {showAddForm && (
+        <div className="bg-card rounded-lg border border-gold/10 p-6 mb-8">
+          <h2 className="text-base font-bold mb-5 text-white tracking-wide">Add New Client</h2>
+          <form onSubmit={handleAddClient}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NAME *</label>
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter client name"
+                  className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm" required />
               </div>
-
-              <div className="mt-6 flex gap-2">
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                >
-                  Add Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PHONE *</label>
+                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number"
+                  className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm" required />
               </div>
-            </form>
-          </div>
-        )}
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">EMAIL</label>
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address"
+                  className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">ADDRESS</label>
+                <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Enter address"
+                  className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm" />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button type="submit" className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                ADD CLIENT
+              </button>
+              <button type="button" onClick={() => setShowAddForm(false)}
+                className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                CANCEL
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
-        {/* Clients List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Clients
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Manage your clients ({clients.length})
-            </p>
-          </div>
+      {/* Search */}
+      <div className="mb-6">
+        <input type="text" placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-card border border-gold/10 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gold/30 text-white placeholder-slate-600 text-sm" />
+      </div>
 
-          <div className="p-6">
-            {/* Search Bar */}
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border border-gray-300 rounded-lg px-4 py-2 mb-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-
-            {clients.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No clients yet. Click "Add Client" to create your first client.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {clients
-                  .filter((c) =>
-                    c.name.toLowerCase().includes(search.toLowerCase())
-                  )
-                  .map((client) => (
-                  <div
-                    key={client.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-lg">
-                          {client.id}. {client.name}
-                        </h3>
-                        <div className="mt-2 space-y-1">
-                          <p className="text-sm text-gray-600">
-                            📞 {client.phone}
-                          </p>
-                          {client.email && (
-                            <p className="text-sm text-gray-600">
-                              ✉️ {client.email}
-                            </p>
-                          )}
-                          {client.address && (
-                            <p className="text-sm text-gray-600">
-                              📍 {client.address}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/clients/${client.id}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-                        >
-                          View
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClient(client.id)}
-                          className="text-red-600 hover:text-red-700 font-medium px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+      {/* Clients List */}
+      {clients.length === 0 ? (
+        <div className="bg-card rounded-lg border border-gold/10 p-12 text-center">
+          <p className="text-slate-500">No clients yet. Click "Add Client" to create your first client.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {clients
+            .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+            .map((client) => (
+            <div key={client.id} className="bg-card rounded-lg border border-gold/10 p-4 hover:border-gold/25 transition-colors">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="font-bold text-white text-sm">
+                    {client.id}. {client.name}
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                    <p className="text-xs text-slate-400">📞 {client.phone}</p>
+                    {client.email && <p className="text-xs text-slate-400">✉️ {client.email}</p>}
+                    {client.address && <p className="text-xs text-slate-400">📍 {client.address}</p>}
                   </div>
-                ))}
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <Link to={`/clients/${client.id}`}
+                    className="text-gold hover:text-gold/80 font-bold text-xs tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
+                    VIEW
+                  </Link>
+                  <button onClick={() => handleDeleteClient(client.id)}
+                    className="text-red-400 hover:text-red-300 font-bold text-xs tracking-wider px-3 py-1.5 border border-red-500/30 rounded hover:bg-red-500/10 transition-colors">
+                    DELETE
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
-      </main>
+      )}
     </div>
   );
 }

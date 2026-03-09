@@ -60,20 +60,15 @@ export default function ClientDetail() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-
     if (!formData.name || !formData.phone) {
       toast.error("Name and phone are required");
       return;
     }
-
     try {
       await API.put(`/clients/${id}`, formData);
       toast.success("Client updated successfully");
@@ -85,13 +80,7 @@ export default function ClientDetail() {
   };
 
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Delete this client? This will also delete all associated cases, hearings, and documents."
-      )
-    )
-      return;
-
+    if (!window.confirm("Delete this client? This will also delete all associated cases, hearings, and documents.")) return;
     try {
       await API.delete(`/clients/${id}`);
       toast.success("Client deleted successfully");
@@ -101,54 +90,58 @@ export default function ClientDetail() {
     }
   };
 
+  const statusColors = {
+    Active: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    Pending: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    Closed: "text-slate-400 border-slate-500/30 bg-slate-500/10",
+    "On Hold": "text-orange-400 border-orange-500/30 bg-orange-500/10",
+    Disposed: "text-red-400 border-red-500/30 bg-red-500/10",
+  };
+
+  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+
   if (loading) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4">Loading client...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
+          <p className="mt-3 text-slate-400 text-sm">Loading client...</p>
+        </div>
       </div>
     );
   }
 
   if (!client) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-gray-500">Client not found.</p>
-        <Link to="/clients" className="text-blue-600 hover:underline mt-2 inline-block">
-          ← Back to Clients
+      <div className="text-center py-20">
+        <p className="text-slate-400 mb-4">Client not found.</p>
+        <Link to="/clients" className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider">
+          ← BACK TO CLIENTS
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <Link
-            to="/clients"
-            className="text-blue-600 hover:underline text-sm mb-2 inline-block"
-          >
-            ← Back to Clients
+          <Link to="/clients" className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider mb-3 inline-block">
+            ← BACK TO CLIENTS
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Client Details</h1>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide">Client Details</h1>
         </div>
-
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {!editing && (
             <>
-              <button
-                onClick={() => setEditing(true)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Edit
+              <button onClick={() => setEditing(true)}
+                className="bg-gold hover:bg-gold/85 text-primary px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                EDIT
               </button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Delete
+              <button onClick={handleDelete}
+                className="text-red-400 border border-red-500/30 hover:bg-red-500/10 px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                DELETE
               </button>
             </>
           )}
@@ -157,136 +150,68 @@ export default function ClientDetail() {
 
       {/* Edit Form */}
       {editing ? (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Edit Client</h2>
+        <div className="bg-card rounded-lg border border-gold/10 p-6">
+          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">EDIT CLIENT</h2>
           <form onSubmit={handleUpdate}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NAME *</label>
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} className={inputClass} required />
               </div>
-
               <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Phone *
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PHONE *</label>
+                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={inputClass} required />
               </div>
-
               <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">EMAIL</label>
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={inputClass} />
               </div>
-
               <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">ADDRESS</label>
+                <input type="text" name="address" value={formData.address} onChange={handleInputChange} className={inputClass} />
               </div>
             </div>
-
             <div className="mt-6 flex gap-2">
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-              >
-                Save Changes
+              <button type="submit"
+                className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                SAVE CHANGES
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing(false);
-                  setFormData({
-                    name: client.name || "",
-                    phone: client.phone || "",
-                    email: client.email || "",
-                    address: client.address || "",
-                  });
-                }}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors"
-              >
-                Cancel
+              <button type="button"
+                onClick={() => { setEditing(false); setFormData({ name: client.name || "", phone: client.phone || "", email: client.email || "", address: client.address || "" }); }}
+                className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+                CANCEL
               </button>
             </div>
           </form>
         </div>
       ) : (
         /* Client Details View */
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Client ID</p>
-                <p className="text-lg font-medium text-gray-900">{client.id}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Name</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {client.name}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {client.phone || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {client.email || "N/A"}
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
-                <p className="text-sm text-gray-500">Address</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {client.address || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Created At</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {client.created_at
-                    ? new Date(client.created_at).toLocaleDateString()
-                    : "N/A"}
-                </p>
-              </div>
+        <div className="bg-card rounded-lg border border-gold/10 p-6">
+          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CLIENT INFORMATION</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CLIENT ID</p>
+              <p className="font-semibold text-white text-sm">{client.id}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">NAME</p>
+              <p className="font-semibold text-white text-sm">{client.name}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">PHONE</p>
+              <p className="font-semibold text-white text-sm">{client.phone || "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">EMAIL</p>
+              <p className="font-semibold text-white text-sm">{client.email || "N/A"}</p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">ADDRESS</p>
+              <p className="font-semibold text-white text-sm">{client.address || "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CREATED</p>
+              <p className="font-semibold text-white text-sm">{client.created_at ? new Date(client.created_at).toLocaleDateString() : "N/A"}</p>
             </div>
           </div>
         </div>
@@ -295,53 +220,32 @@ export default function ClientDetail() {
       {/* Client Cases Section */}
       {!editing && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-3 text-gray-900">
-            Client Cases
-          </h2>
-
+          <h2 className="text-sm font-bold mb-4 text-white tracking-wide">CLIENT CASES</h2>
           {cases.length === 0 ? (
-            <p className="text-gray-500 bg-white rounded-lg shadow p-6 text-center">
-              No cases found for this client.
-            </p>
+            <div className="bg-card rounded-lg border border-gold/10 p-8 text-center">
+              <p className="text-slate-500 text-sm">No cases found for this client.</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {cases.map((c) => (
-                <div
-                  key={c.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex justify-between items-center"
-                >
+                <div key={c.id} className="bg-card border border-gold/10 rounded-lg p-4 hover:border-gold/25 transition-colors flex justify-between items-center">
                   <div>
-                    <p className="font-semibold text-gray-900">
-                      {c.case_title}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Case No: {c.case_number || "N/A"} • Status:{" "}
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                          c.status === "Active"
-                            ? "bg-green-100 text-green-800"
-                            : c.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : c.status === "Closed"
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
+                    <p className="font-bold text-white text-sm">{c.case_title}</p>
+                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                      <span className="text-[10px] text-slate-500">
+                        Case No: {c.case_number || "N/A"}
+                      </span>
+                      <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded border ${statusColors[c.status] || "text-blue-400 border-blue-500/30 bg-blue-500/10"}`}>
                         {c.status}
                       </span>
-                    </p>
-                    {c.court_name && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Court: {c.court_name}
-                      </p>
-                    )}
+                      {c.court_name && (
+                        <span className="text-[10px] text-slate-500">Court: {c.court_name}</span>
+                      )}
+                    </div>
                   </div>
-
-                  <Link
-                    to={`/cases/${c.id}`}
-                    className="text-blue-600 hover:text-blue-800 font-medium px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    View Case
+                  <Link to={`/cases/${c.id}`}
+                    className="text-gold text-xs font-bold tracking-wider px-4 py-2 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
+                    VIEW
                   </Link>
                 </div>
               ))}

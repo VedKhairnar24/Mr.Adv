@@ -14,24 +14,19 @@ function CaseDetail() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Upload form state
   const [uploading, setUploading] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
-
-  // PDF Viewer modal state
   const [viewerDoc, setViewerDoc] = useState(null);
-
-  // Status update state
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const statusOptions = ["Pending", "Active", "On Hold", "Closed", "Disposed"];
   const statusColors = {
-    Pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    Active: "bg-green-100 text-green-800 border-green-300",
-    "On Hold": "bg-orange-100 text-orange-800 border-orange-300",
-    Closed: "bg-gray-100 text-gray-800 border-gray-300",
-    Disposed: "bg-red-100 text-red-800 border-red-300",
+    Pending: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    Active: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    "On Hold": "text-orange-400 border-orange-500/30 bg-orange-500/10",
+    Closed: "text-slate-400 border-slate-500/30 bg-slate-500/10",
+    Disposed: "text-red-400 border-red-500/30 bg-red-500/10",
   };
 
   const handleStatusChange = async (newStatus) => {
@@ -77,45 +72,36 @@ function CaseDetail() {
     }
   };
 
-  // Build the correct URL for a document (handles both / and \ path separators)
   const getDocUrl = (filePath) => {
     const normalized = filePath.replace(/\\/g, '/').replace(/^\//, '');
     return `http://localhost:5000/${normalized}`;
   };
 
-  // Check if a document is a PDF
   const isPdf = (doc) => {
     return doc.file_type?.toLowerCase().includes('pdf') || doc.file_path?.toLowerCase().endsWith('.pdf');
   };
 
-  // Check if a document is an image
   const isImage = (doc) => {
     return doc.file_type?.includes('image') || doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
   };
 
   const uploadDocument = async (e) => {
     e.preventDefault();
-    
     if (!selectedFile || !uploadTitle) {
       toast.error("Please select a file and enter a title");
       return;
     }
-
     try {
       setUploading(true);
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("title", uploadTitle);
-      formData.append("case_id", id);  // Changed from "caseId" to "case_id"
-
-      await API.post("/documents/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-
+      formData.append("case_id", id);
+      await API.post("/documents/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
       toast.success("Document uploaded successfully!");
       setUploadTitle("");
       setSelectedFile(null);
-      loadDocuments(); // Refresh document list
+      loadDocuments();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to upload document");
     } finally {
@@ -131,80 +117,69 @@ function CaseDetail() {
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-600">Loading case details...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
+          <p className="mt-3 text-slate-400 text-sm">Loading case details...</p>
+        </div>
       </div>
     );
   }
 
   if (!caseData) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600">Case not found</p>
-        <button
-          onClick={() => navigate("/cases")}
-          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-        >
-          Back to Cases
+      <div className="text-center py-20">
+        <p className="text-slate-400 mb-4">Case not found</p>
+        <button onClick={() => navigate("/cases")}
+          className="bg-gold hover:bg-gold/85 text-primary px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+          BACK TO CASES
         </button>
       </div>
     );
   }
 
+  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+
   return (
     <div>
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate("/cases")}
-          className="text-blue-600 hover:text-blue-800 mb-4"
-        >
-          ← Back to Cases
+        <button onClick={() => navigate("/cases")}
+          className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider mb-3 inline-block">
+          ← BACK TO CASES
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">Case Details</h1>
+        <h1 className="text-2xl font-extrabold text-white tracking-wide">Case Details</h1>
       </div>
 
       {/* Case Information Card */}
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">
-          Case Information
-        </h2>
-        
-        <div className="grid grid-cols-2 gap-4">
+      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
+        <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CASE INFORMATION</h2>
+        <div className="grid grid-cols-2 gap-5">
           <div>
-            <p className="text-sm text-gray-500">Case Title</p>
-            <p className="font-medium text-gray-900">{caseData.case_title}</p>
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE TITLE</p>
+            <p className="font-semibold text-white text-sm">{caseData.case_title}</p>
           </div>
-          
           <div>
-            <p className="text-sm text-gray-500">Case Number</p>
-            <p className="font-medium text-gray-900">
-              {caseData.case_number || "N/A"}
-            </p>
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE NUMBER</p>
+            <p className="font-semibold text-white text-sm">{caseData.case_number || "N/A"}</p>
           </div>
-          
           <div>
-            <p className="text-sm text-gray-500">Court</p>
-            <p className="font-medium text-gray-900">{caseData.court_name}</p>
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">COURT</p>
+            <p className="font-semibold text-white text-sm">{caseData.court_name}</p>
           </div>
-          
           <div>
-            <p className="text-sm text-gray-500">Case Type</p>
-            <p className="font-medium text-gray-900">
-              {caseData.case_type || "N/A"}
-            </p>
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE TYPE</p>
+            <p className="font-semibold text-white text-sm">{caseData.case_type || "N/A"}</p>
           </div>
-          
           <div>
-            <p className="text-sm text-gray-500 mb-1">Status</p>
-            <div className="flex items-center space-x-2">
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">STATUS</p>
+            <div className="flex items-center gap-2 mt-0.5">
               <select
                 value={caseData.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={updatingStatus}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-                  statusColors[caseData.status] || "bg-blue-100 text-blue-800 border-blue-300"
+                className={`text-[10px] font-bold tracking-wider px-2.5 py-1.5 rounded border cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 ${
+                  statusColors[caseData.status] || "text-blue-400 border-blue-500/30 bg-blue-500/10"
                 } ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {statusOptions.map((s) => (
@@ -212,17 +187,14 @@ function CaseDetail() {
                 ))}
               </select>
               {updatingStatus && (
-                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <div className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-gold border-t-transparent"></div>
               )}
             </div>
           </div>
-          
           <div>
-            <p className="text-sm text-gray-500">Filing Date</p>
-            <p className="font-medium text-gray-900">
-              {caseData.filing_date 
-                ? new Date(caseData.filing_date).toLocaleDateString('en-IN')
-                : "N/A"}
+            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">FILING DATE</p>
+            <p className="font-semibold text-white text-sm">
+              {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString('en-IN') : "N/A"}
             </p>
           </div>
         </div>
@@ -230,28 +202,23 @@ function CaseDetail() {
 
       {/* Client Information Card */}
       {caseData.client_name && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">
-            Client Information
-          </h2>
-          
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
+          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CLIENT INFORMATION</h2>
+          <div className="grid grid-cols-2 gap-5">
             <div>
-              <p className="text-sm text-gray-500">Client Name</p>
-              <p className="font-medium text-gray-900">{caseData.client_name}</p>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CLIENT NAME</p>
+              <p className="font-semibold text-white text-sm">{caseData.client_name}</p>
             </div>
-            
             {caseData.client_phone && (
               <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium text-gray-900">{caseData.client_phone}</p>
+                <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">PHONE</p>
+                <p className="font-semibold text-white text-sm">{caseData.client_phone}</p>
               </div>
             )}
-            
             {caseData.client_email && (
               <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-900">{caseData.client_email}</p>
+                <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">EMAIL</p>
+                <p className="font-semibold text-white text-sm">{caseData.client_email}</p>
               </div>
             )}
           </div>
@@ -259,50 +226,27 @@ function CaseDetail() {
       )}
 
       {/* Upload Document Section */}
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">
-          📤 Upload Document
-        </h2>
-
-        <form onSubmit={uploadDocument} className="p-4 border rounded-lg bg-gray-50">
+      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
+        <h2 className="text-sm font-bold mb-5 text-white tracking-wide">UPLOAD DOCUMENT</h2>
+        <form onSubmit={uploadDocument} className="p-4 border border-gold/10 rounded bg-primary/50">
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Document Title
-            </label>
-            <input
-              type="text"
-              value={uploadTitle}
-              onChange={(e) => setUploadTitle(e.target.value)}
-              placeholder="e.g., Evidence PDF, Contract, etc."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">DOCUMENT TITLE</label>
+            <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)}
+              placeholder="e.g., Evidence PDF, Contract, etc." className={inputClass} required />
           </div>
-          
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select File (PDF, DOC, DOCX, JPG, PNG)
-            </label>
-            <input
-              type="file"
-              onChange={(e) => setSelectedFile(e.target.files[0])}
+            <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">SELECT FILE</label>
+            <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])}
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">Max file size: 10MB</p>
+              className="w-full px-3 py-2 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white text-sm file:bg-gold file:text-primary file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 file:font-bold file:text-xs"
+              required />
+            <p className="text-[10px] text-slate-600 mt-1">Max file size: 10MB</p>
           </div>
-          
-          <button
-            type="submit"
-            disabled={uploading}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              uploading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
-          >
-            {uploading ? "Uploading..." : "Upload Document"}
+          <button type="submit" disabled={uploading}
+            className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+              uploading ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
+            }`}>
+            {uploading ? "UPLOADING..." : "UPLOAD"}
           </button>
         </form>
       </div>
@@ -310,76 +254,50 @@ function CaseDetail() {
       {/* Documents Table */}
       <DocumentList caseId={id} />
 
-      {/* ===== PDF / Image Viewer Modal ===== */}
+      {/* PDF / Image Viewer Modal */}
       {viewerDoc && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex flex-col">
-          {/* Modal Header */}
-          <div className="bg-white px-6 py-3 flex items-center justify-between shadow">
+        <div className="fixed inset-0 bg-white/80 z-50 flex flex-col">
+          <div className="bg-card px-6 py-3 flex items-center justify-between border-b border-gold/10">
             <div className="flex items-center space-x-3">
               {isPdf(viewerDoc) ? (
-                <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                 </svg>
               ) : (
-                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                 </svg>
               )}
               <div>
-                <h3 className="font-semibold text-gray-900">{viewerDoc.document_name}</h3>
-                <p className="text-xs text-gray-500">
-                  {isPdf(viewerDoc) ? 'PDF Document' : 'Image'} • {viewerDoc.file_size ? `${(viewerDoc.file_size / 1024).toFixed(1)} KB` : ''}
+                <h3 className="font-bold text-white text-sm">{viewerDoc.document_name}</h3>
+                <p className="text-[10px] text-slate-500">
+                  {isPdf(viewerDoc) ? 'PDF' : 'Image'} · {viewerDoc.file_size ? `${(viewerDoc.file_size / 1024).toFixed(1)} KB` : ''}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <a
-                href={getDocUrl(viewerDoc.file_path)}
-                download={viewerDoc.document_name}
-                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download
+            <div className="flex items-center space-x-2">
+              <a href={getDocUrl(viewerDoc.file_path)} download={viewerDoc.document_name}
+                className="text-emerald-400 text-xs font-bold tracking-wider px-3 py-1.5 border border-emerald-500/30 rounded hover:bg-emerald-500/10 transition-colors">
+                DOWNLOAD
               </a>
-              <a
-                href={getDocUrl(viewerDoc.file_path)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open in Tab
+              <a href={getDocUrl(viewerDoc.file_path)} target="_blank" rel="noopener noreferrer"
+                className="text-gold text-xs font-bold tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
+                OPEN TAB
               </a>
-              <button
-                onClick={() => setViewerDoc(null)}
-                className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button onClick={() => setViewerDoc(null)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-primary rounded transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           </div>
-
-          {/* Modal Body — PDF or Image */}
           <div className="flex-1 overflow-auto p-2">
             {isPdf(viewerDoc) ? (
-              <iframe
-                src={getDocUrl(viewerDoc.file_path)}
-                className="w-full h-full rounded bg-white"
-                title={viewerDoc.document_name}
-              />
+              <iframe src={getDocUrl(viewerDoc.file_path)} className="w-full h-full rounded bg-white" title={viewerDoc.document_name} />
             ) : isImage(viewerDoc) ? (
               <div className="flex items-center justify-center h-full">
-                <img
-                  src={getDocUrl(viewerDoc.file_path)}
-                  alt={viewerDoc.document_name}
-                  className="max-w-full max-h-full object-contain rounded"
-                />
+                <img src={getDocUrl(viewerDoc.file_path)} alt={viewerDoc.document_name} className="max-w-full max-h-full object-contain rounded" />
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-white">

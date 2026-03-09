@@ -6,9 +6,8 @@ function Cases() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState(""); // Search state
+  const [search, setSearch] = useState("");
   
-  // Form state
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     client_id: "",
@@ -21,7 +20,6 @@ function Cases() {
 
   const navigate = useNavigate();
 
-  // Fetch all cases
   const fetchCases = async () => {
     try {
       setLoading(true);
@@ -36,30 +34,17 @@ function Cases() {
     }
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Create new case
   const createCase = async (e) => {
     e.preventDefault();
-    
     try {
       await API.post("/cases/create", formData);
       alert("Case created successfully!");
-      setFormData({
-        client_id: "",
-        case_title: "",
-        case_number: "",
-        court_name: "",
-        case_type: "",
-        filing_date: ""
-      });
+      setFormData({ client_id: "", case_title: "", case_number: "", court_name: "", case_type: "", filing_date: "" });
       setShowForm(false);
       fetchCases();
     } catch (err) {
@@ -68,155 +53,92 @@ function Cases() {
     }
   };
 
-  // Delete case
   const deleteCase = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this case?")) {
-      return;
-    }
-
+    if (!window.confirm("Are you sure you want to delete this case?")) return;
     try {
       await API.delete(`/cases/${id}`);
       alert("Case deleted successfully!");
       fetchCases();
     } catch (err) {
-      console.error("Error deleting case:", err);
       alert(err.response?.data?.message || "Failed to delete case");
     }
   };
 
-  // Update case status
   const updateStatus = async (id, status) => {
     try {
       await API.put(`/cases/${id}/status`, { status });
       fetchCases();
     } catch (err) {
-      console.error("Error updating status:", err);
       alert(err.response?.data?.message || "Failed to update status");
     }
   };
 
-  // Get status badge color
-  const getStatusColor = (status) => {
+  const getStatusStyle = (status) => {
     switch (status) {
       case "Active":
-        return "bg-green-100 text-green-800";
+        return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
       case "Pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "text-yellow-400 border-yellow-500/30 bg-yellow-500/10";
       case "On Hold":
-        return "bg-orange-100 text-orange-800";
+        return "text-orange-400 border-orange-500/30 bg-orange-500/10";
       case "Closed":
       case "Disposed":
-        return "bg-gray-100 text-gray-800";
+        return "text-slate-400 border-slate-500/30 bg-slate-500/10";
       default:
-        return "bg-blue-100 text-blue-800";
+        return "text-blue-400 border-blue-500/30 bg-blue-500/10";
     }
   };
 
-  useEffect(() => {
-    fetchCases();
-  }, []);
+  useEffect(() => { fetchCases(); }, []);
+
+  const inputClass = "w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm";
 
   return (
-    <div className="p-10 bg-gray-50 min-h-screen">
+    <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Cases</h1>
-          <p className="text-gray-600 mt-1">Manage your legal cases</p>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide">Cases</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage your legal cases</p>
         </div>
-        
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+            showForm
+              ? 'border border-slate-600 text-slate-400 hover:border-slate-400'
+              : 'bg-gold text-primary hover:bg-gold/85'
+          }`}
         >
-          {showForm ? "Cancel" : "+ New Case"}
+          {showForm ? "CANCEL" : "+ NEW CASE"}
         </button>
       </div>
 
       {/* Create Case Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Create New Case</h2>
-          
+        <div className="bg-card rounded-lg border border-gold/10 p-6 mb-8">
+          <h2 className="text-base font-bold mb-5 text-white tracking-wide">Create New Case</h2>
           <form onSubmit={createCase} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Client ID - Should be dropdown in production */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client ID *
-                </label>
-                <input
-                  type="number"
-                  name="client_id"
-                  value={formData.client_id}
-                  onChange={handleInputChange}
-                  placeholder="Enter client ID"
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Note: Create clients first in the Clients page
-                </p>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CLIENT ID *</label>
+                <input type="number" name="client_id" value={formData.client_id} onChange={handleInputChange} placeholder="Enter client ID" required className={inputClass} />
+                <p className="text-[10px] text-slate-600 mt-1">Note: Create clients first in the Clients page</p>
               </div>
-
-              {/* Case Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Case Title *
-                </label>
-                <input
-                  type="text"
-                  name="case_title"
-                  value={formData.case_title}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Smith v. Johnson"
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TITLE *</label>
+                <input type="text" name="case_title" value={formData.case_title} onChange={handleInputChange} placeholder="e.g., Smith v. Johnson" required className={inputClass} />
               </div>
-
-              {/* Case Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Case Number
-                </label>
-                <input
-                  type="text"
-                  name="case_number"
-                  value={formData.case_number}
-                  onChange={handleInputChange}
-                  placeholder="e.g., CV-2024-001"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE NUMBER</label>
+                <input type="text" name="case_number" value={formData.case_number} onChange={handleInputChange} placeholder="e.g., CV-2024-001" className={inputClass} />
               </div>
-
-              {/* Court Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Court Name *
-                </label>
-                <input
-                  type="text"
-                  name="court_name"
-                  value={formData.court_name}
-                  onChange={handleInputChange}
-                  placeholder="e.g., High Court of Delhi"
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">COURT NAME *</label>
+                <input type="text" name="court_name" value={formData.court_name} onChange={handleInputChange} placeholder="e.g., High Court of Delhi" required className={inputClass} />
               </div>
-
-              {/* Case Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Case Type
-                </label>
-                <select
-                  name="case_type"
-                  value={formData.case_type}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TYPE</label>
+                <select name="case_type" value={formData.case_type} onChange={handleInputChange} className={inputClass}>
                   <option value="">Select Type</option>
                   <option value="Civil">Civil</option>
                   <option value="Criminal">Criminal</option>
@@ -227,130 +149,69 @@ function Cases() {
                   <option value="Other">Other</option>
                 </select>
               </div>
-
-              {/* Filing Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filing Date
-                </label>
-                <input
-                  type="date"
-                  name="filing_date"
-                  value={formData.filing_date}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">FILING DATE</label>
+                <input type="date" name="filing_date" value={formData.filing_date} onChange={handleInputChange} className={inputClass} />
               </div>
             </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-              >
-                Create Case
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-medium transition-colors"
-              >
-                Cancel
-              </button>
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">CREATE CASE</button>
+              <button type="button" onClick={() => setShowForm(false)} className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">CANCEL</button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-          {error}
-        </div>
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded mb-6 text-sm">{error}</div>
       )}
 
-      {/* Loading State */}
+      {/* Loading */}
       {loading && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading cases...</p>
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
+            <p className="mt-3 text-slate-400 text-sm">Loading cases...</p>
+          </div>
         </div>
       )}
 
-      {/* Cases List */}
+      {/* Cases Table */}
       {!loading && cases.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Cases
-            </h1>
-            <p className="text-sm text-gray-500">
-              Manage your legal cases ({cases.length})
-            </p>
-            
-            {/* Search Bar */}
-            <input
-              type="text"
-              placeholder="Search cases..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 mt-3"
-            />
+        <div className="bg-card rounded-lg border border-gold/10 overflow-hidden">
+          {/* Search */}
+          <div className="px-5 py-4 border-b border-gold/10">
+            <input type="text" placeholder="Search cases..." value={search} onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-gold/30 text-white placeholder-slate-600 text-sm" />
           </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gold/10">
+              <thead className="bg-primary/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Case Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Case #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Court
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {["Case Title", "Client", "Case #", "Court", "Type", "Status", "Actions"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gold/5">
                 {cases
-                  .filter((c) =>
-                    c.case_title.toLowerCase().includes(search.toLowerCase())
-                  )
+                  .filter((c) => c.case_title.toLowerCase().includes(search.toLowerCase()))
                   .map((c) => (
-                  <tr key={c._id || c.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{c.case_title}</div>
+                  <tr key={c._id || c.id} className="hover:bg-primary/30 transition-colors">
+                    <td className="px-5 py-3">
+                      <span className="text-sm font-semibold text-white">{c.case_title}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{c.client_name || "N/A"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{c.case_number || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{c.court_name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{c.case_type || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-5 py-3 text-sm text-slate-400">{c.client_name || "N/A"}</td>
+                    <td className="px-5 py-3 text-sm text-slate-500">{c.case_number || "-"}</td>
+                    <td className="px-5 py-3 text-sm text-slate-500">{c.court_name}</td>
+                    <td className="px-5 py-3 text-sm text-slate-500">{c.case_type || "-"}</td>
+                    <td className="px-5 py-3">
                       <select
                         value={c.status}
                         onChange={(e) => updateStatus(c._id || c.id, e.target.value)}
-                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`text-[10px] font-bold tracking-wider px-2 py-1 rounded border cursor-pointer focus:outline-none ${getStatusStyle(c.status)}`}
                       >
                         <option value="Pending">Pending</option>
                         <option value="Active">Active</option>
@@ -359,19 +220,9 @@ function Cases() {
                         <option value="Disposed">Disposed</option>
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        to={`/cases/${c._id || c.id}`}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        View
-                      </Link>
-                      <button
-                        onClick={() => deleteCase(c._id || c.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-5 py-3 text-sm font-medium">
+                      <Link to={`/cases/${c._id || c.id}`} className="text-gold hover:text-gold/80 mr-3 font-semibold text-xs tracking-wider">VIEW</Link>
+                      <button onClick={() => deleteCase(c._id || c.id)} className="text-red-400 hover:text-red-300 font-semibold text-xs tracking-wider">DELETE</button>
                     </td>
                   </tr>
                 ))}
@@ -383,19 +234,14 @@ function Cases() {
 
       {/* Empty State */}
       {!loading && cases.length === 0 && (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No cases found</h3>
-          <p className="text-gray-500 mb-4">Get started by creating your first case</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-          >
-            Create Case
+        <div className="bg-card rounded-lg border border-gold/10 p-16 text-center">
+          <svg className="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="text-sm font-bold text-white mt-4 mb-2">No cases found</h3>
+          <p className="text-slate-500 text-sm mb-6">Get started by creating your first case</p>
+          <button onClick={() => setShowForm(true)} className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
+            CREATE CASE
           </button>
         </div>
       )}

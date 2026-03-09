@@ -24,7 +24,6 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (form.password !== form.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -58,100 +57,110 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-purple-50 to-pink-100">
-      <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-lg mx-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Mr. Adv</h1>
-          <p className="text-gray-600 mt-2">Create Your Account</p>
-        </div>
-
-        <h2 className="text-2xl font-semibold text-gray-700 mb-6 text-center">Register</h2>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter your name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
+    <div className="min-h-screen flex justify-center items-center bg-primary px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-card shadow-2xl rounded-lg p-8 border border-gold/10">
+          {/* Gold scales icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary">
+              <svg className="w-8 h-8 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 3v18M12 3l-8 6h16l-8-6zM4 9l2 8h2l-2-8M16 9l2 8h-2l-2-8M8 21h8M6 17h2M16 17h2" />
+              </svg>
+            </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
+          <h1 className="text-xl font-extrabold text-white text-center tracking-wide">MR. ADVOCATE</h1>
+          <p className="text-slate-500 text-xs text-center mt-1 tracking-wider">CREATE YOUR ACCOUNT</p>
+
+          <h2 className="text-lg font-bold text-white mt-8 mb-6 text-center">Register</h2>
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">FULL NAME</label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Enter your name"
+                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">EMAIL ADDRESS</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PHONE NUMBER</label>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PASSWORD</label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Create a password"
+                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
+                required
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CONFIRM PASSWORD</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 rounded font-bold text-sm tracking-wider transition-colors ${
+                loading
+                  ? 'bg-gold/40 cursor-not-allowed text-primary/60'
+                  : 'bg-gold hover:bg-gold/85 text-primary'
+              }`}
+            >
+              {loading ? 'CREATING ACCOUNT...' : 'REGISTER'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-slate-500 text-sm">
+              Already have an account?{' '}
+              <Link to="/login" className="text-gold hover:text-gold/80 font-semibold">
+                Sign In
+              </Link>
+            </p>
           </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">Phone Number</label>
-            <input
-              type="tel"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="Enter your phone number"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Create a password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-medium mb-2">Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-colors ${
-              loading
-                ? 'bg-purple-400 cursor-not-allowed'
-                : 'bg-purple-600 hover:bg-purple-700'
-            }`}
-          >
-            {loading ? 'Creating Account...' : 'Register'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-purple-600 hover:text-purple-700 font-medium">
-              Login here
-            </Link>
-          </p>
         </div>
       </div>
     </div>
