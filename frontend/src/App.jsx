@@ -6,6 +6,7 @@ import Clients from './pages/Clients';
 import Cases from './pages/Cases';
 import Documents from './pages/Documents';
 import CaseDetail from './pages/CaseDetail';
+import ClientDetail from './pages/ClientDetail';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -30,6 +31,13 @@ function App() {
           <ProtectedRoute>
             <MainLayout>
               <Clients />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/clients/:id" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ClientDetail />
             </MainLayout>
           </ProtectedRoute>
         } />

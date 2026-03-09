@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import API from '../services/api';
 
@@ -249,12 +249,20 @@ function Clients() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteClient(client.id)}
-                        className="text-red-600 hover:text-red-700 font-medium px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/clients/${client.id}`}
+                          className="text-blue-600 hover:text-blue-700 font-medium px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          View
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteClient(client.id)}
+                          className="text-red-600 hover:text-red-700 font-medium px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
