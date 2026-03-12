@@ -8,7 +8,7 @@ import Documents from './pages/Documents';
 import CaseDetail from './pages/CaseDetail';
 import ClientDetail from './pages/ClientDetail';
 import Landing from './pages/Landing';
-import MainLayout from './layouts/MainLayout';
+import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,47 +20,47 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* Protected Routes - With Layout */}
+        {/* Protected Routes - With Sidebar Layout */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <Dashboard />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
         <Route path="/clients" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <Clients />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
         <Route path="/clients/:id" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <ClientDetail />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
         <Route path="/cases" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <Cases />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
         <Route path="/documents" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <Documents />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
         <Route path="/cases/:id" element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <CaseDetail />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } />
       </Routes>
