@@ -9,7 +9,7 @@ export default function HearingList({ caseId }) {
   const fetchHearings = async () => {
     try {
       setLoading(true);
-      const res = await API.get(`/hearings/${caseId}`);
+      const res = await API.get(`/hearings/case/${caseId}`);
       setHearings(res.data);
     } catch (error) {
       console.error("Error loading hearings:", error);

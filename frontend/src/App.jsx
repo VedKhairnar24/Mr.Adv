@@ -7,6 +7,9 @@ import Cases from './pages/Cases';
 import Documents from './pages/Documents';
 import CaseDetail from './pages/CaseDetail';
 import ClientDetail from './pages/ClientDetail';
+import Hearings from './pages/Hearings';
+import HearingDetail from './pages/HearingDetail';
+import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -49,6 +52,27 @@ function App() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
+        <Route path="/cases/:id" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <CaseDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/hearings" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Hearings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/hearings/:id" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <HearingDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
         <Route path="/documents" element={
           <ProtectedRoute>
             <DashboardLayout>
@@ -56,10 +80,10 @@ function App() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-        <Route path="/cases/:id" element={
+        <Route path="/settings" element={
           <ProtectedRoute>
             <DashboardLayout>
-              <CaseDetail />
+              <Settings />
             </DashboardLayout>
           </ProtectedRoute>
         } />

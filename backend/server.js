@@ -30,6 +30,15 @@ const noteRoutes = require('./routes/noteRoutes');
 // Import dashboard routes
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
+// Import AI routes
+const aiRoutes = require('./routes/aiRoutes');
+
+// Import court routes
+const courtRoutes = require('./routes/courtRoutes');
+
+// Import settings routes
+const settingsRoutes = require('./routes/settingsRoutes');
+
 // Import error handler middleware
 const errorHandler = require('./middleware/errorMiddleware');
 
@@ -53,6 +62,9 @@ app.use('/api/evidence', evidenceRoutes); // Evidence upload routes
 app.use('/api/hearings', hearingRoutes); // Hearing management routes
 app.use('/api/notes', noteRoutes); // Notes management routes
 app.use('/api/dashboard', dashboardRoutes); // Dashboard statistics routes
+app.use('/api/ai', aiRoutes); // AI legal assistant routes
+app.use('/api/courts', courtRoutes); // Court management routes
+app.use('/api/settings', settingsRoutes); // Settings routes
 
 // Basic route test
 app.get('/', (req, res) => {

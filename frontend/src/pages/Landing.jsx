@@ -13,7 +13,7 @@ export default function Landing() {
             <path d="M12 3v18M12 3l-8 6h16l-8-6zM4 9l2 8h2l-2-8M16 9l2 8h-2l-2-8M8 21h8M6 17h2M16 17h2" />
           </svg>
           <h1 className="font-extrabold text-sm tracking-[0.2em]">
-            MR. ADVOCATE
+            MR. Adv
           </h1>
         </div>
 

@@ -4,39 +4,28 @@ const router = express.Router();
 const verifyToken = require('../middleware/authMiddleware');
 const hearingController = require('../controllers/hearingController');
 
-/**
- * @route   POST /api/hearings/add
- * @desc    Add a hearing to a case (Protected route)
- * @access  Private (Requires JWT token)
- */
+// POST /api/hearings/add - Add a hearing
 router.post('/add', verifyToken, hearingController.addHearing);
 
-/**
- * @route   GET /api/hearings/upcoming
- * @desc    Get upcoming hearings for dashboard (Protected route)
- * @access  Private (Requires JWT token)
- */
+// GET /api/hearings/all - Get all hearings for advocate
+router.get('/all', verifyToken, hearingController.getAllHearings);
+
+// GET /api/hearings/upcoming - Get upcoming hearings
 router.get('/upcoming', verifyToken, hearingController.getUpcomingHearings);
 
-/**
- * @route   GET /api/hearings/:caseId
- * @desc    Get all hearings for a case (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/:caseId', verifyToken, hearingController.getHearings);
+// GET /api/hearings/case/:caseId - Get hearings for a case
+router.get('/case/:caseId', verifyToken, hearingController.getHearingsByCase);
 
-/**
- * @route   PUT /api/hearings/status/:id
- * @desc    Update hearing status (Protected route)
- * @access  Private (Requires JWT token)
- */
+// GET /api/hearings/detail/:id - Get single hearing
+router.get('/detail/:id', verifyToken, hearingController.getHearingById);
+
+// PUT /api/hearings/status/:id - Update hearing status
 router.put('/status/:id', verifyToken, hearingController.updateHearingStatus);
 
-/**
- * @route   DELETE /api/hearings/:id
- * @desc    Delete a hearing (Protected route)
- * @access  Private (Requires JWT token)
- */
+// PUT /api/hearings/:id - Update hearing (full)
+router.put('/:id', verifyToken, hearingController.updateHearing);
+
+// DELETE /api/hearings/:id - Delete hearing
 router.delete('/:id', verifyToken, hearingController.deleteHearing);
 
 module.exports = router;

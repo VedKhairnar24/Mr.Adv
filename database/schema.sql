@@ -107,13 +107,31 @@ CREATE TABLE hearings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     case_id INT NOT NULL,
     hearing_date DATE NOT NULL,
+    hearing_time TIME,
+    court_name VARCHAR(255),
     court_hall VARCHAR(50),
     judge_name VARCHAR(100),
-    hearing_time TIME,
+    stage VARCHAR(255),
     notes TEXT,
+    next_hearing_date DATE,
     status VARCHAR(50) DEFAULT 'Scheduled',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Table: courts
+-- Purpose: Store court information for advocate
+-- ============================================================================
+
+CREATE TABLE courts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    advocate_id INT NOT NULL,
+    court_name VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (advocate_id) REFERENCES advocates(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -127,6 +145,22 @@ CREATE TABLE notes (
     note_text TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Table 8: ai_notes
+-- Purpose: Store AI-generated legal analysis and insights
+-- ============================================================================
+
+CREATE TABLE ai_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    case_id INT NOT NULL,
+    note_type VARCHAR(50) NOT NULL DEFAULT 'full_analysis',
+    content LONGTEXT NOT NULL,
+    model_used VARCHAR(100),
+    tokens_used INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

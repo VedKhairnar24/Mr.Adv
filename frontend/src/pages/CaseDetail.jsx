@@ -6,6 +6,7 @@ import AddHearing from "../components/AddHearing";
 import HearingList from "../components/HearingList";
 import CaseTimeline from "../components/CaseTimeline";
 import DocumentList from "../components/DocumentList";
+import AINotes from "../components/AINotes";
 
 function CaseDetail() {
   const { id } = useParams();
@@ -253,6 +254,9 @@ function CaseDetail() {
 
       {/* Documents Table */}
       <DocumentList caseId={id} />
+
+      {/* AI Legal Analysis */}
+      <AINotes caseId={id} />
 
       {/* PDF / Image Viewer Modal */}
       {viewerDoc && (
