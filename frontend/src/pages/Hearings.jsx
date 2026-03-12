@@ -119,7 +119,7 @@ export default function Hearings() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-gold hover:bg-gold/85 text-primary px-5 py-2.5 rounded font-bold text-sm tracking-wider transition-colors"
+          className="px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors border border-slate-600 text-slate-400 hover:border-slate-400 "
         >
           + Add Hearing
         </button>

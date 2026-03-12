@@ -4,32 +4,16 @@ const router = express.Router();
 const verifyToken = require('../middleware/authMiddleware');
 const noteController = require('../controllers/noteController');
 
-/**
- * @route   POST /api/notes/add
- * @desc    Add a note to a case (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.post('/add', verifyToken, noteController.addNote);
-
-/**
- * @route   GET /api/notes/:caseId
- * @desc    Get all notes for a case (Protected route)
- * @access  Private (Requires JWT token)
- */
-router.get('/:caseId', verifyToken, noteController.getNotes);
-
-/**
- * @route   PUT /api/notes/:id
- * @desc    Update a note (Protected route)
- * @access  Private (Requires JWT token)
- */
+// New case_notes endpoints
+router.post('/', verifyToken, noteController.createNote);
+router.get('/', verifyToken, noteController.getAllNotes);
+router.get('/case/:caseId', verifyToken, noteController.getNotesByCase);
+router.get('/:id', verifyToken, noteController.getNoteById);
 router.put('/:id', verifyToken, noteController.updateNote);
-
-/**
- * @route   DELETE /api/notes/:id
- * @desc    Delete a note (Protected route)
- * @access  Private (Requires JWT token)
- */
 router.delete('/:id', verifyToken, noteController.deleteNote);
+
+// Legacy endpoints (backward compatibility with old notes table)
+router.post('/add', verifyToken, noteController.addNote);
+router.get('/legacy/:caseId', verifyToken, noteController.getLegacyNotes);
 
 module.exports = router;

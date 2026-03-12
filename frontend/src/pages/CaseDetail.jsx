@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 import AddHearing from "../components/AddHearing";
 import HearingList from "../components/HearingList";
 import CaseTimeline from "../components/CaseTimeline";
@@ -13,6 +14,7 @@ function CaseDetail() {
   const navigate = useNavigate();
   const [caseData, setCaseData] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [caseNotes, setCaseNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [uploading, setUploading] = useState(false);
@@ -59,6 +61,15 @@ function CaseDetail() {
       setDocuments(res.data);
     } catch (error) {
       console.error("Error loading documents:", error);
+    }
+  };
+
+  const loadCaseNotes = async () => {
+    try {
+      const res = await API.get(`/notes/case/${id}`);
+      setCaseNotes(res.data);
+    } catch (error) {
+      console.error("Error loading case notes:", error);
     }
   };
 
@@ -113,6 +124,7 @@ function CaseDetail() {
   useEffect(() => {
     loadCase();
     loadDocuments();
+    loadCaseNotes();
     setLoading(false);
   }, []);
 
@@ -311,6 +323,40 @@ function CaseDetail() {
           </div>
         </div>
       )}
+
+      {/* Case Notes Section */}
+      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-sm font-bold text-white tracking-wide">CASE NOTES</h2>
+          <Link
+            to={`/notes/create?case_id=${id}`}
+            className="text-gold text-xs font-bold tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors"
+          >
+            + ADD NOTE
+          </Link>
+        </div>
+        {caseNotes.length === 0 ? (
+          <p className="text-slate-500 text-sm">No notes for this case yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {caseNotes.map((note) => (
+              <Link
+                key={note.id}
+                to={`/notes/${note.id}`}
+                className="flex justify-between items-center p-3 bg-primary/50 rounded border border-gold/5 hover:border-gold/20 transition-colors group"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white group-hover:text-gold transition-colors">{note.title}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {note.note_type} · {new Date(note.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                </div>
+                <span className="text-gold text-xs font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">VIEW →</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Case Timeline */}
       <CaseTimeline caseId={id} />

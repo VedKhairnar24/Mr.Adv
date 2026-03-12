@@ -103,7 +103,7 @@ function Cases() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors border border-slate-600 text-slate-400 hover:border-slate-400  ${
             showForm
               ? 'border border-slate-600 text-slate-400 hover:border-slate-400'
               : 'bg-gold text-primary hover:bg-gold/85'

@@ -91,7 +91,7 @@ function Clients() {
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors  border border-slate-600 text-slate-400 hover:border-slate-400  ${
             showAddForm
               ? 'border border-slate-600 text-slate-400 hover:border-slate-400'
               : 'bg-gold text-primary hover:bg-gold/85'
@@ -157,7 +157,7 @@ function Clients() {
           {clients
             .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
             .map((client) => (
-            <div key={client.id} className="bg-card rounded-lg border border-gold/10 p-4 hover:border-gold/25 transition-colors">
+            <div key={client.id} className="bg-card rounded-lg border-2 border-white p-4 hover:border-gold/25 transition-colors">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h3 className="font-bold text-white text-sm">
@@ -171,11 +171,11 @@ function Clients() {
                 </div>
                 <div className="flex gap-2 ml-4">
                   <Link to={`/clients/${client.id}`}
-                    className="text-gold hover:text-gold/80 font-bold text-xs tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
+                    className="text-white hover:text-gold/80 font-bold text-xs tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
                     VIEW
                   </Link>
                   <button onClick={() => handleDeleteClient(client.id)}
-                    className="text-red-400 hover:text-red-300 font-bold text-xs tracking-wider px-3 py-1.5 border border-red-500/30 rounded hover:bg-red-500/10 transition-colors">
+                    className="text-red-500 hover:text-red-300 font-bold text-xs tracking-wider px-3 py-1.5 border border-red-600/30 rounded hover:bg-red-500/10 transition-colors">
                     DELETE
                   </button>
                 </div>

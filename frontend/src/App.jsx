@@ -10,6 +10,9 @@ import ClientDetail from './pages/ClientDetail';
 import Hearings from './pages/Hearings';
 import HearingDetail from './pages/HearingDetail';
 import Settings from './pages/Settings';
+import Notes from './pages/Notes';
+import NoteForm from './pages/NoteForm';
+import NoteDetail from './pages/NoteDetail';
 import Landing from './pages/Landing';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -77,6 +80,34 @@ function App() {
           <ProtectedRoute>
             <DashboardLayout>
               <Documents />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/notes" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Notes />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/notes/create" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <NoteForm />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/notes/:id" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <NoteDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/notes/:id/edit" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <NoteForm />
             </DashboardLayout>
           </ProtectedRoute>
         } />

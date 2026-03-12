@@ -1,102 +1,119 @@
 const db = require('../config/db');
 
+const NOTE_TYPES = ['Client Meeting', 'Court Observation', 'Legal Research', 'Strategy Note', 'Task', 'General'];
+
 /**
- * Add a note to a case
- * POST /api/notes/add
+ * Create a new case note
+ * POST /api/notes
  */
-exports.addNote = (req, res) => {
-  const { case_id, note_text } = req.body;
+exports.createNote = (req, res) => {
+  const { case_id, note_type, title, content, author } = req.body;
 
-  // Validate required fields
-  if (!case_id) {
-    return res.status(400).json({ 
-      message: 'Case ID is required' 
-    });
+  if (!title || !content) {
+    return res.status(400).json({ message: 'Title and content are required' });
   }
 
-  if (!note_text) {
-    return res.status(400).json({ 
-      message: 'Note text is required' 
-    });
+  if (note_type && !NOTE_TYPES.includes(note_type)) {
+    return res.status(400).json({ message: 'Invalid note type' });
   }
 
-  // Verify that the case belongs to this advocate
-  const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
-  
-  db.query(checkCaseSql, [case_id, req.advocateId], (err, caseResult) => {
-    if (err) {
-      console.error('Case verification error:', err);
-      return res.status(500).json({ 
-        message: 'Failed to verify case',
-        error: err.message 
-      });
-    }
-
-    if (caseResult.length === 0) {
-      return res.status(404).json({ 
-        message: 'Case not found or does not belong to you' 
-      });
-    }
-
-    // Insert note into database
-    const sql = 'INSERT INTO notes (case_id, note_text) VALUES (?, ?)';
-
-    db.query(sql, [case_id, note_text], (err, result) => {
+  const proceed = () => {
+    const sql = 'INSERT INTO case_notes (case_id, advocate_id, note_type, title, content, author) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(sql, [case_id || null, req.advocateId, note_type || 'General', title, content, author || 'Advocate'], (err, result) => {
       if (err) {
-        console.error('Add note error:', err);
-        return res.status(500).json({ 
-          message: 'Note creation failed',
-          error: err.message 
-        });
+        console.error('Create note error:', err);
+        return res.status(500).json({ message: 'Note creation failed', error: err.message });
       }
+      res.status(201).json({ message: 'Note created successfully', noteId: result.insertId });
+    });
+  };
 
-      res.status(201).json({ 
-        message: 'Note added successfully',
-        noteId: result.insertId
-      });
+  if (case_id) {
+    const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
+    db.query(checkCaseSql, [case_id, req.advocateId], (err, caseResult) => {
+      if (err) return res.status(500).json({ message: 'Failed to verify case', error: err.message });
+      if (caseResult.length === 0) return res.status(404).json({ message: 'Case not found or does not belong to you' });
+      proceed();
+    });
+  } else {
+    proceed();
+  }
+};
+
+/**
+ * Get all notes for the advocate (global)
+ * GET /api/notes
+ */
+exports.getAllNotes = (req, res) => {
+  const { search, note_type } = req.query;
+
+  let sql = `SELECT cn.*, c.case_title 
+             FROM case_notes cn 
+             LEFT JOIN cases c ON cn.case_id = c.id 
+             WHERE cn.advocate_id = ?`;
+  const params = [req.advocateId];
+
+  if (search) {
+    sql += ' AND (cn.title LIKE ? OR cn.content LIKE ? OR c.case_title LIKE ?)';
+    const searchParam = `%${search}%`;
+    params.push(searchParam, searchParam, searchParam);
+  }
+
+  if (note_type) {
+    sql += ' AND cn.note_type = ?';
+    params.push(note_type);
+  }
+
+  sql += ' ORDER BY cn.updated_at DESC';
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      console.error('Get all notes error:', err);
+      return res.status(500).json({ message: 'Error fetching notes', error: err.message });
+    }
+    res.json(result);
+  });
+};
+
+/**
+ * Get notes by case ID
+ * GET /api/notes/case/:caseId
+ */
+exports.getNotesByCase = (req, res) => {
+  const caseId = req.params.caseId;
+
+  const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
+  db.query(checkCaseSql, [caseId, req.advocateId], (err, caseResult) => {
+    if (err) return res.status(500).json({ message: 'Failed to verify case', error: err.message });
+    if (caseResult.length === 0) return res.status(404).json({ message: 'Case not found or does not belong to you' });
+
+    const sql = `SELECT cn.*, c.case_title 
+                 FROM case_notes cn 
+                 LEFT JOIN cases c ON cn.case_id = c.id 
+                 WHERE cn.case_id = ? AND cn.advocate_id = ? 
+                 ORDER BY cn.updated_at DESC`;
+    db.query(sql, [caseId, req.advocateId], (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error fetching notes', error: err.message });
+      res.json(result);
     });
   });
 };
 
 /**
- * Get all notes for a specific case
- * GET /api/notes/:caseId
+ * Get a single note by ID
+ * GET /api/notes/:id
  */
-exports.getNotes = (req, res) => {
-  const caseId = req.params.caseId;
+exports.getNoteById = (req, res) => {
+  const noteId = req.params.id;
 
-  // Verify that the case belongs to this advocate
-  const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
-  
-  db.query(checkCaseSql, [caseId, req.advocateId], (err, caseResult) => {
-    if (err) {
-      console.error('Case verification error:', err);
-      return res.status(500).json({ 
-        message: 'Failed to verify case',
-        error: err.message 
-      });
-    }
-
-    if (caseResult.length === 0) {
-      return res.status(404).json({ 
-        message: 'Case not found or does not belong to you' 
-      });
-    }
-
-    // Fetch notes for the case
-    const sql = 'SELECT * FROM notes WHERE case_id = ? ORDER BY created_at DESC';
-
-    db.query(sql, [caseId], (err, result) => {
-      if (err) {
-        console.error('Get notes error:', err);
-        return res.status(500).json({ 
-          message: 'Error fetching notes',
-          error: err.message 
-        });
-      }
-
-      res.json(result);
-    });
+  const sql = `SELECT cn.*, c.case_title 
+               FROM case_notes cn 
+               LEFT JOIN cases c ON cn.case_id = c.id 
+               WHERE cn.id = ? AND cn.advocate_id = ?`;
+  db.query(sql, [noteId, req.advocateId], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error fetching note', error: err.message });
+    if (result.length === 0) return res.status(404).json({ message: 'Note not found' });
+    res.json(result[0]);
   });
 };
 
@@ -106,61 +123,39 @@ exports.getNotes = (req, res) => {
  */
 exports.updateNote = (req, res) => {
   const noteId = req.params.id;
-  const { note_text } = req.body;
+  const { case_id, note_type, title, content, author } = req.body;
 
-  // First verify the note exists and get case_id
-  const checkSql = 'SELECT * FROM notes WHERE id = ?';
-  
-  db.query(checkSql, [noteId], (err, noteResult) => {
-    if (err) {
-      return res.status(500).json({ 
-        message: 'Error updating note',
-        error: err.message 
+  if (!title || !content) {
+    return res.status(400).json({ message: 'Title and content are required' });
+  }
+
+  if (note_type && !NOTE_TYPES.includes(note_type)) {
+    return res.status(400).json({ message: 'Invalid note type' });
+  }
+
+  const checkSql = 'SELECT id FROM case_notes WHERE id = ? AND advocate_id = ?';
+  db.query(checkSql, [noteId, req.advocateId], (err, noteResult) => {
+    if (err) return res.status(500).json({ message: 'Error verifying note', error: err.message });
+    if (noteResult.length === 0) return res.status(404).json({ message: 'Note not found' });
+
+    const proceed = () => {
+      const updateSql = 'UPDATE case_notes SET case_id = ?, note_type = ?, title = ?, content = ?, author = ? WHERE id = ? AND advocate_id = ?';
+      db.query(updateSql, [case_id || null, note_type || 'General', title, content, author || 'Advocate', noteId, req.advocateId], (err) => {
+        if (err) return res.status(500).json({ message: 'Failed to update note', error: err.message });
+        res.json({ message: 'Note updated successfully' });
       });
+    };
+
+    if (case_id) {
+      const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
+      db.query(checkCaseSql, [case_id, req.advocateId], (err, caseResult) => {
+        if (err) return res.status(500).json({ message: 'Failed to verify case', error: err.message });
+        if (caseResult.length === 0) return res.status(404).json({ message: 'Case not found or does not belong to you' });
+        proceed();
+      });
+    } else {
+      proceed();
     }
-
-    if (noteResult.length === 0) {
-      return res.status(404).json({ 
-        message: 'Note not found' 
-      });
-    }
-
-    const note = noteResult[0];
-
-    // Verify the case belongs to this advocate
-    const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
-    
-    db.query(checkCaseSql, [note.case_id, req.advocateId], (err, caseResult) => {
-      if (err) {
-        return res.status(500).json({ 
-          message: 'Error verifying case',
-          error: err.message 
-        });
-      }
-
-      if (caseResult.length === 0) {
-        return res.status(404).json({ 
-          message: 'Case not found or does not belong to you' 
-        });
-      }
-
-      // Update the note
-      const updateSql = 'UPDATE notes SET note_text = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-
-      db.query(updateSql, [note_text, noteId], (err, result) => {
-        if (err) {
-          console.error('Update note error:', err);
-          return res.status(500).json({ 
-            message: 'Failed to update note',
-            error: err.message 
-          });
-        }
-
-        res.json({ 
-          message: 'Note updated successfully' 
-        });
-      });
-    });
   });
 };
 
@@ -171,58 +166,62 @@ exports.updateNote = (req, res) => {
 exports.deleteNote = (req, res) => {
   const noteId = req.params.id;
 
-  // First verify the note exists and get case_id
-  const checkSql = 'SELECT * FROM notes WHERE id = ?';
-  
-  db.query(checkSql, [noteId], (err, noteResult) => {
-    if (err) {
-      return res.status(500).json({ 
-        message: 'Error deleting note',
-        error: err.message 
-      });
-    }
+  const checkSql = 'SELECT id FROM case_notes WHERE id = ? AND advocate_id = ?';
+  db.query(checkSql, [noteId, req.advocateId], (err, noteResult) => {
+    if (err) return res.status(500).json({ message: 'Error deleting note', error: err.message });
+    if (noteResult.length === 0) return res.status(404).json({ message: 'Note not found' });
 
-    if (noteResult.length === 0) {
-      return res.status(404).json({ 
-        message: 'Note not found' 
-      });
-    }
+    const deleteSql = 'DELETE FROM case_notes WHERE id = ? AND advocate_id = ?';
+    db.query(deleteSql, [noteId, req.advocateId], (err) => {
+      if (err) return res.status(500).json({ message: 'Failed to delete note', error: err.message });
+      res.json({ message: 'Note deleted successfully' });
+    });
+  });
+};
 
-    const note = noteResult[0];
+/**
+ * Legacy: Add a simple note to a case (backward compatibility)
+ * POST /api/notes/add
+ */
+exports.addNote = (req, res) => {
+  const { case_id, note_text } = req.body;
 
-    // Verify the case belongs to this advocate
-    const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
-    
-    db.query(checkCaseSql, [note.case_id, req.advocateId], (err, caseResult) => {
-      if (err) {
-        return res.status(500).json({ 
-          message: 'Error verifying case',
-          error: err.message 
-        });
-      }
+  if (!case_id) {
+    return res.status(400).json({ message: 'Case ID is required' });
+  }
+  if (!note_text) {
+    return res.status(400).json({ message: 'Note text is required' });
+  }
 
-      if (caseResult.length === 0) {
-        return res.status(404).json({ 
-          message: 'Case not found or does not belong to you' 
-        });
-      }
+  const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
+  db.query(checkCaseSql, [case_id, req.advocateId], (err, caseResult) => {
+    if (err) return res.status(500).json({ message: 'Failed to verify case', error: err.message });
+    if (caseResult.length === 0) return res.status(404).json({ message: 'Case not found or does not belong to you' });
 
-      // Delete the note
-      const deleteSql = 'DELETE FROM notes WHERE id = ?';
+    const sql = 'INSERT INTO notes (case_id, note_text) VALUES (?, ?)';
+    db.query(sql, [case_id, note_text], (err, result) => {
+      if (err) return res.status(500).json({ message: 'Note creation failed', error: err.message });
+      res.status(201).json({ message: 'Note added successfully', noteId: result.insertId });
+    });
+  });
+};
 
-      db.query(deleteSql, [noteId], (err, result) => {
-        if (err) {
-          console.error('Delete note error:', err);
-          return res.status(500).json({ 
-            message: 'Failed to delete note',
-            error: err.message 
-          });
-        }
+/**
+ * Legacy: Get all notes for a specific case (from old notes table)
+ * GET /api/notes/legacy/:caseId
+ */
+exports.getLegacyNotes = (req, res) => {
+  const caseId = req.params.caseId;
 
-        res.json({ 
-          message: 'Note deleted successfully' 
-        });
-      });
+  const checkCaseSql = 'SELECT id FROM cases WHERE id = ? AND advocate_id = ?';
+  db.query(checkCaseSql, [caseId, req.advocateId], (err, caseResult) => {
+    if (err) return res.status(500).json({ message: 'Failed to verify case', error: err.message });
+    if (caseResult.length === 0) return res.status(404).json({ message: 'Case not found or does not belong to you' });
+
+    const sql = 'SELECT * FROM notes WHERE case_id = ? ORDER BY created_at DESC';
+    db.query(sql, [caseId], (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error fetching notes', error: err.message });
+      res.json(result);
     });
   });
 };

@@ -149,7 +149,26 @@ CREATE TABLE notes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- Table 8: ai_notes
+-- Table 8: case_notes
+-- Purpose: Store advocate's organized case notes (meetings, research, strategy)
+-- ============================================================================
+
+CREATE TABLE case_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    case_id INT,
+    advocate_id INT NOT NULL,
+    note_type VARCHAR(50) DEFAULT 'General',
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    author VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+    FOREIGN KEY (advocate_id) REFERENCES advocates(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Table 9: ai_notes
 -- Purpose: Store AI-generated legal analysis and insights
 -- ============================================================================
 
@@ -213,6 +232,15 @@ INSERT INTO notes (case_id, note_text) VALUES
 (1, 'Need to prepare strong arguments for property ownership proof.'),
 (2, 'Witness testimony needs to be recorded before next hearing.'),
 (3, 'Both parties willing for mutual settlement. Mediation possible.');
+
+-- Insert test case_notes
+INSERT INTO case_notes (case_id, advocate_id, note_type, title, content, author) VALUES
+(1, 1, 'Client Meeting', 'Meeting with client regarding property dispute', 'Client explained boundary issue with neighbor. Land documents from 2019 show clear ownership. Need to collect survey records from municipal office.', 'Advocate'),
+(1, 1, 'Legal Research', 'Property law precedents research', 'Reviewed Transfer of Property Act, 1882 Section 54. Found relevant case law: Kumar v. State (2021) supporting our position on boundary disputes.', 'Advocate'),
+(2, 1, 'Court Observation', 'Initial bail hearing observations', 'Judge seemed receptive to bail arguments. Prosecution requested more time for investigation. Next hearing set for evidence review.', 'Advocate'),
+(2, 1, 'Strategy Note', 'Defense strategy for criminal case', 'Focus on establishing alibi through CCTV footage. Prepare witnesses for cross-examination. Key weakness in prosecution: timeline inconsistency.', 'Advocate'),
+(3, 1, 'Client Meeting', 'Family court mediation discussion', 'Both parties open to mediation. Client prefers amicable settlement. Discussed custody arrangements and financial terms.', 'Advocate'),
+(1, 1, 'Task', 'Follow-up tasks for property case', 'Collect survey records from municipal office. Prepare written arguments for next hearing. Schedule meeting with property valuer.', 'Advocate');
 
 -- ============================================================================
 -- Useful Queries for Testing
