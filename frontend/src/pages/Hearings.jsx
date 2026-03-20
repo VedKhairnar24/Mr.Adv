@@ -3,6 +3,44 @@ import { Link } from "react-router-dom";
 import API from "../services/api";
 import toast from "react-hot-toast";
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M1.5 12s3.5-6 10.5-6 10.5 6 10.5 6-3.5 6-10.5 6S1.5 12 1.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <rect x="6" y="6" width="12" height="14" rx="2" />
+      <path d="M10 10v6M14 10v6" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </svg>
+  );
+}
+
 export default function Hearings() {
   const [hearings, setHearings] = useState([]);
   const [cases, setCases] = useState([]);
@@ -76,14 +114,18 @@ export default function Hearings() {
     }
   };
 
-  const statusBadge = (status) => {
-    const styles = {
-      Scheduled: "text-blue-400 border-blue-500/30 bg-blue-500/10",
-      Completed: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-      Cancelled: "text-red-400 border-red-500/30 bg-red-500/10",
-      Adjourned: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
-    };
-    return styles[status] || styles.Scheduled;
+  const statusBadgeClass = (status = "") => {
+    const value = status.toLowerCase();
+    if (value === "scheduled") return "badge-scheduled";
+    if (value === "completed") return "badge-completed";
+    if (value === "adjourned") return "badge-adjourned";
+    if (value === "cancelled") return "badge-cancelled";
+    return "badge-scheduled";
+  };
+
+  const stageBadgeClass = (stage = "") => {
+    if ((stage || "").toLowerCase() === "evidence") return "badge-pending";
+    return "badge-disposed";
   };
 
   const filtered = hearings.filter((h) => {
@@ -98,6 +140,22 @@ export default function Hearings() {
 
   const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
 
+  const weekStrip = [
+    { day: "MON", date: "17", iso: "2026-03-17" },
+    { day: "TUE", date: "18", iso: "2026-03-18" },
+    { day: "WED", date: "19", iso: "2026-03-19" },
+    { day: "THU", date: "20", iso: "2026-03-20", today: true },
+    { day: "FRI", date: "21", iso: "2026-03-21" },
+    { day: "SAT", date: "22", iso: "2026-03-22" },
+    { day: "SUN", date: "23", iso: "2026-03-23" },
+  ];
+
+  const hearingDateSet = new Set(
+    hearings
+      .map((h) => (h.hearing_date || "").slice(0, 10))
+      .filter(Boolean)
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -110,108 +168,305 @@ export default function Hearings() {
   }
 
   return (
-    <div className="text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* SECTION A: HEADER BAR */}
+      <header
+        style={{
+          padding: "28px 40px 20px",
+          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
+          background: "rgba(10, 18, 16, 0.5)",
+          backdropFilter: "blur(10px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-extrabold tracking-wide">Hearings</h1>
-          <p className="text-white/50 text-sm mt-1">Track all court dates and hearing schedules</p>
+          <h1
+            style={{
+              fontFamily: "Cormorant Garamond, serif",
+              fontSize: "32px",
+              fontWeight: 700,
+              lineHeight: 1,
+              color: "var(--white)",
+            }}
+          >
+            Hearings
+          </h1>
+          <p
+            style={{
+              marginTop: "4px",
+              fontFamily: "Rajdhani, sans-serif",
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--muted)",
+            }}
+          >
+            Track all court dates and hearing schedules
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors border border-slate-600 text-slate-400 hover:border-slate-400 "
+          className="btn-primary"
         >
           + Add Hearing
         </button>
-      </div>
+      </header>
+
+      <div style={{ padding: "32px 40px" }}>
+      {/* SECTION B: WEEK STRIP CALENDAR */}
+      <section
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "3px",
+          padding: "16px",
+          display: "flex",
+          gap: "8px",
+          marginBottom: "24px",
+        }}
+      >
+        {weekStrip.map((slot) => {
+          const hasHearing = hearingDateSet.has(slot.iso);
+          const isToday = Boolean(slot.today);
+          return (
+            <button
+              type="button"
+              key={slot.iso}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "10px 6px",
+                borderRadius: "3px",
+                border: isToday ? "1px solid rgba(200, 168, 75, 0.3)" : "1px solid transparent",
+                background: isToday ? "var(--gold-dim)" : "transparent",
+                position: "relative",
+                transition: "all 0.2s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                if (!isToday) e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              }}
+              onMouseLeave={(e) => {
+                if (!isToday) e.currentTarget.style.background = "transparent";
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Rajdhani, sans-serif",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  letterSpacing: "2px",
+                  textTransform: "uppercase",
+                  color: "var(--muted)",
+                  marginBottom: "4px",
+                }}
+              >
+                {slot.day}
+              </span>
+              <span
+                style={{
+                  fontFamily: "Cormorant Garamond, serif",
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: isToday ? "var(--gold)" : "var(--white)",
+                  lineHeight: 1,
+                }}
+              >
+                {slot.date}
+              </span>
+              {(isToday || hasHearing) && (
+                <span
+                  style={{
+                    position: "absolute",
+                    width: "4px",
+                    height: "4px",
+                    borderRadius: "50%",
+                    background: "var(--gold)",
+                    bottom: "6px",
+                  }}
+                ></span>
+              )}
+            </button>
+          );
+        })}
+      </section>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search case, court, judge..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={`${inputClass} max-w-xs`}
-        />
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <span
+            style={{
+              position: "absolute",
+              left: "14px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: "16px",
+              height: "16px",
+              color: "var(--muted)",
+              pointerEvents: "none",
+            }}
+          >
+            <SearchIcon />
+          </span>
+          <input
+            type="text"
+            placeholder="Search case, court, judge..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: "100%",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              color: "var(--white)",
+              fontFamily: "Rajdhani, sans-serif",
+              fontSize: "14px",
+              padding: "12px 16px 12px 44px",
+            }}
+          />
+        </div>
         <input
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className={`${inputClass} max-w-[180px]`}
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "3px",
+            color: "var(--muted)",
+            fontFamily: "Rajdhani, sans-serif",
+            fontSize: "13px",
+            fontWeight: 500,
+            padding: "10px 14px",
+            minWidth: "180px",
+          }}
         />
-        {(search || dateFilter) && (
-          <button onClick={() => { setSearch(""); setDateFilter(""); }}
-            className="text-xs text-white/50 hover:text-white transition-colors">
-            Clear
-          </button>
-        )}
       </div>
 
-      {/* Hearings Table */}
+      {/* SECTION D: HEARINGS TABLE */}
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-lg border border-gold/10 p-10 text-center">
-          <p className="text-white/50 text-sm">No hearings found</p>
+        <div className="empty-state" style={{ minHeight: "260px" }}>
+          <div className="empty-icon" style={{ width: "48px", height: "48px", fontSize: "18px" }}>
+            <CalendarIcon />
+          </div>
+          <h3 className="empty-title" style={{ fontSize: "18px" }}>No hearings found</h3>
+          <p className="empty-text" style={{ fontSize: "12px" }}>Schedule a hearing to see it here</p>
         </div>
       ) : (
-        <div className="bg-card rounded-lg border border-gold/10 overflow-hidden">
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr className="border-b border-gold/10">
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">DATE</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">CASE</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">COURT</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">JUDGE</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">STAGE</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">STATUS</th>
-                  <th className="text-left p-4 text-[10px] font-bold tracking-[0.2em] text-white/50">ACTIONS</th>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {[
+                    "Date",
+                    "Case",
+                    "Court",
+                    "Judge",
+                    "Stage",
+                    "Status",
+                    "Actions",
+                  ].map((head) => (
+                    <th
+                      key={head}
+                      style={{
+                        textAlign: "left",
+                        padding: "14px 16px",
+                        fontFamily: "Rajdhani, sans-serif",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        letterSpacing: "2px",
+                        textTransform: "uppercase",
+                        color: "var(--muted)",
+                      }}
+                    >
+                      {head}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((h) => (
-                  <tr key={h.id} className="border-b border-gold/5 hover:bg-white/5 transition-colors">
-                    <td className="p-4">
-                      <p className="font-semibold text-white">
-                        {new Date(h.hearing_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                {filtered.map((h, index) => {
+                  const day = new Date(h.hearing_date).toLocaleDateString("en-IN", { day: "2-digit" });
+                  const month = new Date(h.hearing_date).toLocaleDateString("en-IN", { month: "short" });
+                  const time = h.hearing_time ? h.hearing_time.slice(0, 5) : "--:--";
+                  return (
+                  <tr
+                    key={h.id}
+                    style={{
+                      borderBottom: index === filtered.length - 1 ? "none" : "1px solid rgba(180, 150, 80, 0.08)",
+                      borderLeft: "3px solid transparent",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                      e.currentTarget.style.borderLeftColor = "var(--gold)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.borderLeftColor = "transparent";
+                    }}
+                  >
+                    <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                      <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "22px", fontWeight: 700, lineHeight: 1, color: "var(--white)" }}>
+                        {day}
                       </p>
-                      {h.hearing_time && (
-                        <p className="text-[10px] text-white/40 mt-0.5">{h.hearing_time.slice(0, 5)}</p>
-                      )}
+                      <p style={{ marginTop: "2px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>
+                        {month} · {time}
+                      </p>
                     </td>
-                    <td className="p-4">
-                      <Link to={`/cases/${h.case_id}`} className="font-semibold text-gold hover:text-gold/80 transition-colors">
+
+                    <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                      <Link to={`/cases/${h.case_id}`} style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)", textDecoration: "none" }}>
                         {h.case_title}
                       </Link>
-                      {h.case_number && <p className="text-[10px] text-white/40 mt-0.5">{h.case_number}</p>}
+                      {h.case_number && <p style={{ marginTop: "2px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>{h.case_number}</p>}
                     </td>
-                    <td className="p-4 text-white/70">{h.court_name || h.court_hall || "—"}</td>
-                    <td className="p-4 text-white/70">{h.judge_name || "—"}</td>
-                    <td className="p-4 text-white/70">{h.stage || "—"}</td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-bold tracking-wider px-2.5 py-1 rounded border ${statusBadge(h.status)}`}>
+
+                    <td style={{ padding: "14px 16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
+                      {h.court_name || h.court_hall || "—"}
+                    </td>
+                    <td style={{ padding: "14px 16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
+                      {h.judge_name || "—"}
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <span className={`badge ${stageBadgeClass(h.stage)}`}>{h.stage || "Other"}</span>
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <span className={`badge ${statusBadgeClass(h.status)}`}>
                         {h.status?.toUpperCase()}
                       </span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Link to={`/hearings/${h.id}`}
-                          className="text-[10px] font-bold tracking-wider text-gold hover:text-gold/80 transition-colors">
-                          VIEW
+
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Link
+                          to={`/hearings/${h.id}`}
+                          className="btn-ghost"
+                          style={{ padding: "5px 12px", fontSize: "11px", color: "var(--gold)", borderColor: "rgba(200,168,75,0.35)", gap: "6px" }}
+                        >
+                          <span style={{ width: "13px", height: "13px" }}><EyeIcon /></span>
+                          View
                         </Link>
-                        <button onClick={() => deleteHearing(h.id)}
-                          className="text-[10px] font-bold tracking-wider text-red-400 hover:text-red-300 transition-colors">
-                          DELETE
+                        <button onClick={() => deleteHearing(h.id)} className="btn-danger" style={{ padding: "10px" }} title="Delete hearing">
+                          <span style={{ width: "14px", height: "14px" }}><TrashIcon /></span>
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
         </div>
       )}
+      </div>
 
       {/* Add Hearing Modal */}
       {showModal && (

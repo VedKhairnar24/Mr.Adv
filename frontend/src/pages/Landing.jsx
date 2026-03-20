@@ -1,109 +1,476 @@
 import { useNavigate } from "react-router-dom";
+import brandLogo from './img/Mr.Adv logo.png';
+import '../styles/landing.css';
 
 export default function Landing() {
   const navigate = useNavigate();
 
-  return (
-    <div className="min-h-screen bg-primary text-white">
+  const practiceAreas = [
+    "Civil Law",
+    "Criminal Defense",
+    "Family Court",
+    "Corporate Legal",
+    "Property Disputes",
+    "Labour Matters",
+    "High Court Advocacy",
+    "Arbitration"
+  ];
 
-      {/* ── Navbar ── */}
-      <nav className="flex items-center justify-between px-10 py-6 border-b border-gold/10">
-        <div className="flex items-center gap-2.5">
-          <svg className="w-6 h-6 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M12 3v18M12 3l-8 6h16l-8-6zM4 9l2 8h2l-2-8M16 9l2 8h-2l-2-8M8 21h8M6 17h2M16 17h2" />
-          </svg>
-          <h1 className="font-extrabold text-sm tracking-[0.2em]">
-            MR. Adv
-          </h1>
+  return (
+    <div style={{ background: 'var(--bg)', color: 'var(--white)' }}>
+      {/* ────── NAVBAR ────── */}
+      <nav 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '64px',
+          background: 'rgba(10, 18, 16, 0.88)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 60px',
+          zIndex: 100,
+          animation: 'fadeDown 0.7s ease-out'
+        }}
+      >
+        {/* Logo & Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '1.5px solid var(--gold)',
+              borderRadius: '3px',
+              background: 'var(--gold-dim)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative'
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--gold)"
+              strokeWidth="1.5"
+            >
+              <rect x="4" y="6" width="16" height="12" rx="1.5" />
+              <path d="M8 6V4M16 6V4M8 18V20M16 18V20M4 10h16" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', gap: '2px', fontFamily: "'Cormorant Garamond', serif", fontSize: '21px', fontWeight: 600 }}>
+            <span style={{ color: 'var(--white)' }}>Mr.</span>
+            <span style={{ color: 'var(--gold)' }}>Adv</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-8 text-[11px] font-bold tracking-[0.18em]">
-          <a href="#about" className="text-slate-400 hover:text-gold transition-colors">ABOUT</a>
-          <a href="#services" className="text-slate-400 hover:text-gold transition-colors">SERVICES</a>
-          <a href="#cases" className="text-slate-400 hover:text-gold transition-colors">CASES</a>
+        {/* Nav Links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          {['ABOUT', 'SERVICES', 'CASES'].map(link => (
+            <a
+              key={link}
+              href={`#${link.toLowerCase()}`}
+              style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '2.5px',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+                textDecoration: 'none',
+                paddingBottom: '2px',
+                background: `linear-gradient(to right, var(--gold) 0%, var(--gold) 0%, transparent 0%) no-repeat bottom`,
+                backgroundSize: '0 1px',
+                transition: 'background-size 200ms ease',
+                fontFamily: "'Rajdhani', sans-serif"
+              }}
+              onMouseEnter={e => {
+                e.target.style.backgroundSize = '100% 1px';
+                e.target.style.color = 'var(--white)';
+              }}
+              onMouseLeave={e => {
+                e.target.style.backgroundSize = '0 1px';
+                e.target.style.color = 'var(--muted)';
+              }}
+            >
+              {link}
+            </a>
+          ))}
           <button
             onClick={() => navigate("/login")}
-            className="bg-gold text-primary px-5 py-2 rounded font-bold tracking-[0.12em] hover:bg-gold/85 transition-colors"
+            style={{
+              background: 'transparent',
+              border: '1.5px solid var(--gold)',
+              color: 'var(--gold)',
+              padding: '7px 20px',
+              borderRadius: '2px',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '2.5px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              fontFamily: "'Rajdhani', sans-serif",
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={e => {
+              e.target.style.background = 'var(--gold)';
+              e.target.style.color = 'var(--bg)';
+            }}
+            onMouseLeave={e => {
+              e.target.style.background = 'transparent';
+              e.target.style.color = 'var(--gold)';
+            }}
           >
             LOGIN
           </button>
         </div>
       </nav>
 
-      {/* ── Hero Section ── */}
-      <section className="grid md:grid-cols-2 items-center px-10 py-20 gap-12 max-w-7xl mx-auto">
+      {/* ────── HERO SECTION ────── */}
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          alignItems: 'center',
+          padding: '120px 60px 80px',
+          maxWidth: '1400px',
+          margin: '0 auto',
+          minHeight: '100vh',
+          marginTop: '64px',
+          gap: '64px'
+        }}
+      >
+        {/* LEFT COLUMN */}
+        <div style={{ animation: 'fadeLeft 0.9s ease-out 0.3s both' }}>
+          {/* Eyebrow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+            <div style={{ width: '30px', height: '1px', background: 'var(--gold)' }}></div>
+            <span
+              style={{
+                fontSize: '10px',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 700,
+                letterSpacing: '4px',
+                textTransform: 'uppercase',
+                color: 'var(--gold)'
+              }}
+            >
+              Trusted Legal Counsel
+            </span>
+          </div>
 
-        {/* Left Content */}
-        <div>
-          <p className="text-gold text-[11px] font-bold tracking-[0.25em] mb-4">TRUSTED LEGAL COUNSEL</p>
-          <h1 className="text-5xl font-extrabold leading-tight mb-6">
-            We Will Defend <br />
-            Your Legal Rights
+          {/* H1 */}
+          <h1
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 'clamp(50px, 5.5vw, 78px)',
+              fontWeight: 700,
+              lineHeight: 1.02,
+              letterSpacing: '-1px',
+              marginBottom: '24px'
+            }}
+          >
+            <span style={{ color: 'var(--white)' }}>We Will Defend</span>
+            <br />
+            <span style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--gold)' }}>Your Legal</span>
+            <br />
+            <span style={{ color: 'var(--white)' }}>Rights</span>
           </h1>
 
-          <p className="text-slate-400 mb-10 max-w-md leading-relaxed">
-            Trusted legal expertise for individuals and businesses.
-            We are committed to providing reliable counsel and
-            defending your rights with dedication and integrity.
+          {/* Description */}
+          <p
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: '15px',
+              fontWeight: 400,
+              lineHeight: 1.7,
+              color: 'var(--muted)',
+              maxWidth: '460px',
+              marginBottom: '32px'
+            }}
+          >
+            Trusted legal expertise for individuals and businesses. We are committed to providing reliable counsel and defending your rights with dedication and integrity.
           </p>
 
-          <div className="flex gap-4">
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '56px' }}>
             <button
               onClick={() => navigate("/register")}
-              className="bg-gold text-primary px-7 py-3 rounded font-bold text-sm tracking-[0.1em] hover:bg-gold/85 transition-colors"
+              className="btn-primary"
+              style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '2.5px',
+                textTransform: 'uppercase',
+              }}
             >
-              GET STARTED
+              Get Started →
             </button>
             <button
               onClick={() => navigate("/login")}
-              className="border border-gold text-gold px-7 py-3 rounded font-bold text-sm tracking-[0.1em] hover:bg-gold hover:text-primary transition-all duration-200"
+              className="btn-ghost"
+              style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '2.5px',
+                textTransform: 'uppercase',
+              }}
             >
-              LOGIN
+              Login
             </button>
+          </div>
+
+          {/* Stats */}
+          <div
+            style={{
+              paddingTop: '36px',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
+              gap: '36px'
+            }}
+          >
+            {[
+              { value: '500+', label: 'Cases Won' },
+              { value: '15+', label: 'Years Active' },
+              { value: '98%', label: 'Success Rate' }
+            ].map((stat, idx) => (
+              <div key={idx} style={{ position: 'relative' }}>
+                {idx > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-18px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '1px',
+                      height: '40px',
+                      background: 'var(--border)'
+                    }}
+                  ></div>
+                )}
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 700, color: 'var(--gold)', marginBottom: '4px' }}>
+                  {stat.value}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    color: 'var(--muted)'
+                  }}
+                >
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right — Illustration */}
-        <div className="flex justify-center">
-          <div className="relative w-full max-w-md">
-            {/* Decorative glow */}
-            <div className="absolute -top-8 -right-8 w-72 h-72 bg-gold/5 rounded-full blur-3xl"></div>
+        {/* RIGHT COLUMN */}
+        <div style={{ animation: 'fadeRight 0.9s ease-out 0.5s both' }}>
+          <div
+            style={{
+              maxWidth: '440px',
+              position: 'relative',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+              padding: '40px',
+              margin: '0 auto'
+            }}
+            className="card"
+          >
+            {/* Corner Brackets */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                width: '20px',
+                height: '20px',
+                borderTop: '1px solid var(--gold)',
+                borderLeft: '1px solid var(--gold)',
+                opacity: 0.4
+              }}
+            ></div>
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '16px',
+                right: '16px',
+                width: '20px',
+                height: '20px',
+                borderBottom: '1px solid var(--gold)',
+                borderRight: '1px solid var(--gold)',
+                opacity: 0.4
+              }}
+            ></div>
 
-            {/* Illustration card */}
-            <div className="relative bg-card rounded-2xl p-10 shadow-2xl border border-gold/15">
-              {/* Scale of Justice SVG */}
-              <svg viewBox="0 0 200 220" className="w-full h-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="85" y="200" width="30" height="10" rx="2" fill="#C4A47C" />
-                <rect x="95" y="80" width="10" height="125" fill="#C4A47C" />
-                <rect x="20" y="72" width="160" height="8" rx="4" fill="#C4A47C" />
-                <circle cx="100" cy="76" r="14" fill="#0D2329" stroke="#C4A47C" strokeWidth="3" />
-                <text x="100" y="81" textAnchor="middle" fill="#C4A47C" fontSize="14" fontWeight="bold">⚖</text>
-                <line x1="40" y1="80" x2="25" y2="140" stroke="#C4A47C" strokeWidth="2" />
-                <line x1="40" y1="80" x2="55" y2="140" stroke="#C4A47C" strokeWidth="2" />
-                <ellipse cx="40" cy="145" rx="30" ry="8" fill="#C4A47C" opacity="0.8" />
-                <line x1="160" y1="80" x2="145" y2="130" stroke="#C4A47C" strokeWidth="2" />
-                <line x1="160" y1="80" x2="175" y2="130" stroke="#C4A47C" strokeWidth="2" />
-                <ellipse cx="160" cy="135" rx="30" ry="8" fill="#C4A47C" opacity="0.8" />
-                <circle cx="40" cy="50" r="3" fill="#C4A47C" opacity="0.2" />
-                <circle cx="160" cy="45" r="4" fill="#C4A47C" opacity="0.15" />
-                <circle cx="30" cy="170" r="2" fill="#C4A47C" opacity="0.25" />
-                <circle cx="170" cy="165" r="3" fill="#C4A47C" opacity="0.2" />
-              </svg>
+            {/* Glow Overlay */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'radial-gradient(circle 200px at 50% 30%, rgba(200,168,75,0.08) 0%, transparent 70%)',
+                borderRadius: '4px',
+                pointerEvents: 'none'
+              }}
+            ></div>
 
-              <div className="text-center mt-6">
-                <p className="text-gold font-bold text-lg tracking-wide">Justice & Integrity</p>
-                <p className="text-slate-500 text-sm mt-1">Since 2024</p>
+            {/* Scales SVG */}
+            <svg
+              viewBox="0 0 220 240"
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxWidth: '220px',
+                margin: '0 auto',
+                animation: 'scalesSway 8s ease-in-out infinite',
+                filter: 'drop-shadow(0 0 25px rgba(200,168,75,0.2))'
+              }}
+            >
+              {/* Scales of Justice */}
+              {/* Pole */}
+              <rect x="100" y="80" width="8" height="130" fill="var(--gold)" />
+              {/* Horizontal Beam */}
+              <rect x="30" y="78" width="160" height="6" rx="3" fill="var(--gold)" />
+              {/* Center Circle */}
+              <circle cx="110" cy="81" r="12" fill="var(--surface)" stroke="var(--gold)" strokeWidth="2" />
+              <circle cx="110" cy="81" r="5" fill="var(--gold)" opacity="0.6" />
+
+              {/* Left Pan */}
+              <g>
+                <line x1="60" y1="80" x2="50" y2="140" stroke="var(--gold)" strokeWidth="1.5" />
+                <line x1="60" y1="80" x2="70" y2="140" stroke="var(--gold)" strokeWidth="1.5" />
+                <ellipse cx="60" cy="145" rx="25" ry="6" fill="var(--gold)" opacity="0.7" />
+              </g>
+
+              {/* Right Pan */}
+              <g>
+                <line x1="160" y1="80" x2="150" y2="125" stroke="var(--gold)" strokeWidth="1.5" />
+                <line x1="160" y1="80" x2="170" y2="125" stroke="var(--gold)" strokeWidth="1.5" />
+                <ellipse cx="160" cy="130" rx="25" ry="6" fill="var(--gold)" opacity="0.5" />
+              </g>
+
+              {/* Decorative circles */}
+              <circle cx="45" cy="60" r="2" fill="var(--gold)" opacity="0.15" />
+              <circle cx="175" cy="55" r="3" fill="var(--gold)" opacity="0.1" />
+              <circle cx="35" cy="180" r="1.5" fill="var(--gold)" opacity="0.2" />
+              <circle cx="185" cy="175" r="2" fill="var(--gold)" opacity="0.15" />
+            </svg>
+
+            {/* Footer Section */}
+            <div
+              style={{
+                borderTop: '1px solid var(--border)',
+                paddingTop: '20px',
+                marginTop: '24px',
+                textAlign: 'center'
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  color: 'var(--white)',
+                  marginBottom: '4px'
+                }}
+              >
+                Justice & Integrity
               </div>
+              <div
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '3px',
+                  textTransform: 'uppercase',
+                  color: 'var(--gold)'
+                }}
+              >
+                Since 2024
+              </div>
+            </div>
+
+            {/* Floating Badge */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '-14px',
+                background: 'var(--gold)',
+                color: 'var(--bg)',
+                padding: '6px 14px',
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                clipPath: 'polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px)',
+                fontFamily: "'Rajdhani', sans-serif",
+                boxShadow: '0 4px 16px rgba(200, 168, 75, 0.25)'
+              }}
+            >
+              Est. 2024
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <div className="border-t border-slate-800 mt-10 px-10 py-6 flex justify-between text-slate-500 text-xs tracking-wide">
-        <p>© 2026 Mr. Advocate. All rights reserved.</p>
-        <p>Advocate Case Management System</p>
-      </div>
+      {/* ────── TICKER STRIP ────── */}
+      <section
+        style={{
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg2)',
+          padding: '12px 0',
+          overflow: 'hidden',
+          animation: 'fadeDown 0.9s ease-out 0.7s both'
+        }}
+      >
+        <style>{`
+          @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .ticker-content {
+            display: flex;
+            gap: 0;
+            animation: tickerScroll 28s linear infinite;
+            white-space: nowrap;
+          }
+          .ticker-item {
+            flex-shrink: 0;
+            padding: 0 44px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .ticker-item::before {
+            content: '';
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--gold);
+          }
+        `}</style>
+        <div className="ticker-content">
+          {[...practiceAreas, ...practiceAreas].map((area, idx) => (
+            <div key={idx} className="ticker-item" style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '10px', fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--muted)' }}>
+              {area}
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

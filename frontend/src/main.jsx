@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'react-hot-toast'
+import './styles/globals.css'
 import './index.css'
 import App from './App.jsx'
 

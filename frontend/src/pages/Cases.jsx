@@ -2,11 +2,42 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M1.5 12s3.5-6 10.5-6 10.5 6 10.5 6-3.5 6-10.5 6S1.5 12 1.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <rect x="6" y="6" width="12" height="14" rx="2" />
+      <path d="M10 10v6M14 10v6" />
+    </svg>
+  );
+}
+
 function Cases() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [typeFilter, setTypeFilter] = useState("All Types");
   
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,50 +104,106 @@ function Cases() {
     }
   };
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "Active":
-        return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-      case "Pending":
-        return "text-yellow-400 border-yellow-500/30 bg-yellow-500/10";
-      case "On Hold":
-        return "text-orange-400 border-orange-500/30 bg-orange-500/10";
-      case "Closed":
-      case "Disposed":
-        return "text-slate-400 border-slate-500/30 bg-slate-500/10";
-      default:
-        return "text-blue-400 border-blue-500/30 bg-blue-500/10";
-    }
+  const getStatusBadgeClass = (status = "") => {
+    const value = status.toLowerCase();
+    if (value === "active" || value === "completed") return "badge-active";
+    if (value === "pending" || value === "adjourned" || value === "on hold") return "badge-pending";
+    if (value === "scheduled") return "badge-scheduled";
+    if (value === "closed" || value === "cancelled") return "badge-closed";
+    if (value === "disposed") return "badge-disposed";
+    return "badge-disposed";
   };
 
   useEffect(() => { fetchCases(); }, []);
 
   const inputClass = "w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm";
 
+  const filteredCases = cases.filter((item) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      q === "" ||
+      (item.case_title || "").toLowerCase().includes(q) ||
+      (item.client_name || "").toLowerCase().includes(q) ||
+      (item.court_name || "").toLowerCase().includes(q) ||
+      (item.case_number || "").toLowerCase().includes(q);
+
+    const matchesStatus =
+      statusFilter === "All Status" ||
+      (item.status || "").toLowerCase() === statusFilter.toLowerCase();
+
+    const typeValue = (item.case_type || "Other").toLowerCase();
+    const matchesType =
+      typeFilter === "All Types" ||
+      typeValue === typeFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* SECTION A: HEADER BAR */}
+      <header
+        style={{
+          padding: "28px 40px 20px",
+          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
+          background: "rgba(10, 18, 16, 0.5)",
+          backdropFilter: "blur(10px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-wide">Cases</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your legal cases</p>
+          <h1
+            style={{
+              fontFamily: "Cormorant Garamond, serif",
+              fontSize: "32px",
+              fontWeight: 700,
+              lineHeight: 1,
+              color: "var(--white)",
+            }}
+          >
+            Cases
+          </h1>
+          <p
+            style={{
+              marginTop: "4px",
+              fontFamily: "Rajdhani, sans-serif",
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--muted)",
+            }}
+          >
+            Manage your legal cases
+          </p>
         </div>
+
         <button
           onClick={() => setShowForm(!showForm)}
-          className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors border border-slate-600 text-slate-400 hover:border-slate-400  ${
-            showForm
-              ? 'border border-slate-600 text-slate-400 hover:border-slate-400'
-              : 'bg-gold text-primary hover:bg-gold/85'
-          }`}
+          className="btn-primary"
+          style={{
+            fontFamily: "Rajdhani, sans-serif",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "2.5px",
+            textTransform: "uppercase",
+          }}
         >
-          {showForm ? "CANCEL" : "+ NEW CASE"}
+          {showForm ? "Cancel" : "+ New Case"}
         </button>
-      </div>
+      </header>
+
+      <div style={{ padding: "32px 40px" }}>
 
       {/* Create Case Form */}
       {showForm && (
-        <div className="bg-card rounded-lg border border-gold/10 p-6 mb-8">
-          <h2 className="text-base font-bold mb-5 text-white tracking-wide">Create New Case</h2>
+        <div className="card" style={{ borderRadius: "3px", padding: "24px", marginBottom: "20px" }}>
+          <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>
+            Create New Case
+          </h2>
           <form onSubmit={createCase} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -155,8 +242,8 @@ function Cases() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">CREATE CASE</button>
-              <button type="button" onClick={() => setShowForm(false)} className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">CANCEL</button>
+              <button type="submit" className="btn-primary">Create Case</button>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
             </div>
           </form>
         </div>
@@ -172,79 +259,279 @@ function Cases() {
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
-            <p className="mt-3 text-slate-400 text-sm">Loading cases...</p>
+            <p className="mt-3" style={{ color: "var(--muted)", fontFamily: "Rajdhani, sans-serif", fontSize: "12px" }}>Loading cases...</p>
           </div>
         </div>
       )}
 
-      {/* Cases Table */}
-      {!loading && cases.length > 0 && (
-        <div className="bg-card rounded-lg border border-gold/10 overflow-hidden">
-          {/* Search */}
-          <div className="px-5 py-4 border-b border-gold/10">
-            <input type="text" placeholder="Search cases..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-gold/30 text-white placeholder-slate-600 text-sm" />
+      {!loading && (
+        <>
+          {/* SECTION B: FILTER ROW */}
+          <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ flex: 1, position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "14px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "16px",
+                  height: "16px",
+                  color: "var(--muted)",
+                  pointerEvents: "none",
+                }}
+              >
+                <SearchIcon />
+              </span>
+              <input
+                type="text"
+                placeholder="Search cases..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: "100%",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--white)",
+                  fontFamily: "Rajdhani, sans-serif",
+                  fontSize: "14px",
+                  padding: "12px 16px 12px 44px",
+                }}
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                color: "var(--muted)",
+                fontFamily: "Rajdhani, sans-serif",
+                fontSize: "13px",
+                fontWeight: 500,
+                padding: "10px 14px",
+                minWidth: "150px",
+              }}
+            >
+              <option>All Status</option>
+              <option>Active</option>
+              <option>Pending</option>
+              <option>Disposed</option>
+              <option>Closed</option>
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                color: "var(--muted)",
+                fontFamily: "Rajdhani, sans-serif",
+                fontSize: "13px",
+                fontWeight: 500,
+                padding: "10px 14px",
+                minWidth: "150px",
+              }}
+            >
+              <option>All Types</option>
+              <option>Civil</option>
+              <option>Criminal</option>
+              <option>Family</option>
+              <option>Corporate</option>
+              <option>Property</option>
+              <option>Other</option>
+            </select>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gold/10">
-              <thead className="bg-primary/50">
-                <tr>
-                  {["Case Title", "Client", "Case #", "Court", "Type", "Status", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gold/5">
-                {cases
-                  .filter((c) => c.case_title.toLowerCase().includes(search.toLowerCase()))
-                  .map((c) => (
-                  <tr key={c._id || c.id} className="hover:bg-primary/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <span className="text-sm font-semibold text-white">{c.case_title}</span>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-400">{c.client_name || "N/A"}</td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{c.case_number || "-"}</td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{c.court_name}</td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{c.case_type || "-"}</td>
-                    <td className="px-5 py-3">
-                      <select
-                        value={c.status}
-                        onChange={(e) => updateStatus(c._id || c.id, e.target.value)}
-                        className={`text-[10px] font-bold tracking-wider px-2 py-1 rounded border cursor-pointer focus:outline-none ${getStatusStyle(c.status)}`}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Active">Active</option>
-                        <option value="On Hold">On Hold</option>
-                        <option value="Closed">Closed</option>
-                        <option value="Disposed">Disposed</option>
-                      </select>
-                    </td>
-                    <td className="px-5 py-3 text-sm font-medium">
-                      <Link to={`/cases/${c._id || c.id}`} className="text-gold hover:text-gold/80 mr-3 font-semibold text-xs tracking-wider">VIEW</Link>
-                      <button onClick={() => deleteCase(c._id || c.id)} className="text-red-400 hover:text-red-300 font-semibold text-xs tracking-wider">DELETE</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          {/* SECTION C: CASES TABLE */}
+          {filteredCases.length > 0 && (
+            <div
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      {[
+                        "Case Title",
+                        "Client",
+                        "Court",
+                        "Type",
+                        "Status",
+                        "Actions",
+                      ].map((heading) => (
+                        <th
+                          key={heading}
+                          style={{
+                            padding: "14px 16px",
+                            textAlign: "left",
+                            fontFamily: "Rajdhani, sans-serif",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "2px",
+                            textTransform: "uppercase",
+                            color: "var(--muted)",
+                          }}
+                        >
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCases.map((item, index) => {
+                      const id = item._id || item.id;
+                      const courtText = item.court_name || "N/A";
+                      const typeText = item.case_type || "Other";
+                      return (
+                        <tr
+                          key={id}
+                          style={{
+                            borderBottom:
+                              index === filteredCases.length - 1
+                                ? "none"
+                                : "1px solid rgba(180, 150, 80, 0.08)",
+                            borderLeft: "3px solid transparent",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                            e.currentTarget.style.borderLeftColor = "var(--gold)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderLeftColor = "transparent";
+                          }}
+                        >
+                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                            <p
+                              style={{
+                                fontFamily: "Rajdhani, sans-serif",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "var(--white)",
+                              }}
+                            >
+                              {item.case_title}
+                            </p>
+                            <p
+                              style={{
+                                marginTop: "2px",
+                                fontFamily: "JetBrains Mono, monospace",
+                                fontSize: "11px",
+                                color: "var(--gold)",
+                              }}
+                            >
+                              {item.case_number || "N/A"}
+                            </p>
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "14px 16px",
+                              verticalAlign: "middle",
+                              fontFamily: "Rajdhani, sans-serif",
+                              fontSize: "13px",
+                              fontWeight: 400,
+                              color: "var(--muted)",
+                            }}
+                          >
+                            {item.client_name || "N/A"}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "14px 16px",
+                              verticalAlign: "middle",
+                              fontFamily: "Rajdhani, sans-serif",
+                              fontSize: "13px",
+                              fontWeight: 400,
+                              color: "var(--muted)",
+                              maxWidth: "220px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {courtText}
+                          </td>
+
+                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                            <span className="badge badge-disposed">{typeText}</span>
+                          </td>
+
+                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                            <span className={`badge ${getStatusBadgeClass(item.status)}`}>
+                              {(item.status || "Disposed").toUpperCase()}
+                            </span>
+                          </td>
+
+                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <Link
+                                to={`/cases/${id}`}
+                                className="btn-ghost"
+                                style={{
+                                  padding: "5px 12px",
+                                  fontSize: "11px",
+                                  color: "var(--gold)",
+                                  borderColor: "rgba(200, 168, 75, 0.35)",
+                                  gap: "6px",
+                                }}
+                              >
+                                <span style={{ width: "13px", height: "13px" }}>
+                                  <EyeIcon />
+                                </span>
+                                View
+                              </Link>
+
+                              <button
+                                onClick={() => deleteCase(id)}
+                                className="btn-danger"
+                                style={{ padding: "10px" }}
+                                title="Delete case"
+                              >
+                                <span style={{ width: "14px", height: "14px" }}>
+                                  <TrashIcon />
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Empty State */}
-      {!loading && cases.length === 0 && (
-        <div className="bg-card rounded-lg border border-gold/10 p-16 text-center">
-          <svg className="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {!loading && filteredCases.length === 0 && (
+        <div className="empty-state" style={{ minHeight: "300px" }}>
+          <svg className="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginBottom: "12px" }}>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <h3 className="text-sm font-bold text-white mt-4 mb-2">No cases found</h3>
-          <p className="text-slate-500 text-sm mb-6">Get started by creating your first case</p>
-          <button onClick={() => setShowForm(true)} className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-            CREATE CASE
+          <h3 className="empty-title" style={{ fontSize: "18px" }}>No cases found</h3>
+          <p className="empty-text" style={{ fontSize: "12px" }}>Get started by creating your first case</p>
+          <button onClick={() => setShowForm(true)} className="btn-primary">
+            Create Case
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

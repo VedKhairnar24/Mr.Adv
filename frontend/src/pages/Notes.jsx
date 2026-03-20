@@ -1,177 +1,260 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import toast from "react-hot-toast";
 
-const NOTE_TYPES = ["Client Meeting", "Court Observation", "Legal Research", "Strategy Note", "Task", "General"];
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function QuillIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M20 3c-6 1-10 4.2-13.5 10.5L5 19l5.5-1.5C16.8 14 20 10 21 4l-1-1z" />
+      <path d="M7 17 4 20M14 8l2 2" />
+    </svg>
+  );
+}
 
 function Notes() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("");
+  const [filterType, setFilterType] = useState("All Types");
 
   const fetchNotes = async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (search) params.search = search;
-      if (filterType) params.note_type = filterType;
-      const res = await API.get("/notes", { params });
-      setNotes(res.data);
+      const res = await API.get("/notes");
+      setNotes(res.data || []);
     } catch (err) {
-      console.error("Error fetching notes:", err);
       toast.error("Failed to load notes");
+      setNotes([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteNote = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this note?")) return;
-    try {
-      await API.delete(`/notes/${id}`);
-      toast.success("Note deleted successfully");
-      fetchNotes();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete note");
-    }
-  };
-
   useEffect(() => {
     fetchNotes();
-  }, [filterType]);
+  }, []);
 
-  const getTypeStyle = (type) => {
-    switch (type) {
-      case "Client Meeting": return "text-blue-400 border-blue-500/30 bg-blue-500/10";
-      case "Court Observation": return "text-purple-400 border-purple-500/30 bg-purple-500/10";
-      case "Legal Research": return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-      case "Strategy Note": return "text-orange-400 border-orange-500/30 bg-orange-500/10";
-      case "Task": return "text-yellow-400 border-yellow-500/30 bg-yellow-500/10";
-      default: return "text-slate-400 border-slate-500/30 bg-slate-500/10";
+  const mapType = (apiType = "") => {
+    const t = apiType.toLowerCase();
+    if (t.includes("strategy")) return "Strategy";
+    if (t.includes("reminder") || t.includes("task")) return "Reminder";
+    if (t.includes("client")) return "Client Instruction";
+    return "General";
+  };
+
+  const typeTheme = (mappedType) => {
+    switch (mappedType) {
+      case "Strategy":
+        return { border: "var(--gold)", badge: "badge-scheduled" };
+      case "Reminder":
+        return { border: "#fbbf24", badge: "badge-pending" };
+      case "Client Instruction":
+        return { border: "#60a5fa", badge: "note-badge-client" };
+      default:
+        return { border: "#9ca3af", badge: "badge-disposed" };
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    fetchNotes();
-  };
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => {
+      const mapped = mapType(note.note_type);
+      const q = search.toLowerCase();
+      const matchSearch =
+        q === "" ||
+        (note.title || "").toLowerCase().includes(q) ||
+        (note.content || "").toLowerCase().includes(q) ||
+        (note.case_title || "").toLowerCase().includes(q) ||
+        (note.case_number || "").toLowerCase().includes(q);
+      const matchType = filterType === "All Types" || mapped === filterType;
+      return matchSearch && matchType;
+    });
+  }, [notes, search, filterType]);
+
+  const sampleNotes = [
+    {
+      id: "sample-1",
+      title: "Cross-examination strategy for next hearing",
+      content: "Prepare questions around the timeline discrepancies...",
+      note_type: "Strategy",
+      case_number: "CV-20012-12135",
+      created_at: "2026-03-15",
+    },
+    {
+      id: "sample-2",
+      title: "Submit bail application documents",
+      content: "Documents need to be submitted before registry closes at 4 PM on Monday...",
+      note_type: "Reminder",
+      case_number: "CV-20012-12135",
+      created_at: "2026-03-18",
+    },
+    {
+      id: "sample-3",
+      title: "Client instructions — property matter",
+      content: "Client insists on pursuing the full claim amount. Does not want out-of-court settlement...",
+      note_type: "Client Instruction",
+      case_number: "General",
+      created_at: "2026-03-20",
+    },
+  ];
+
+  const displayNotes = filteredNotes.length > 0 ? filteredNotes : notes.length === 0 ? sampleNotes : [];
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-wide">Notes</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your legal notes ({notes.length})</p>
-        </div>
-        <Link
-          to="/notes/create"
-          className="bg-gold text-primary hover:bg-gold/85 px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors"
-        >
-          + NEW NOTE
-        </Link>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <style>{`
+        .notes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .note-content-clamp {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .note-badge-client {
+          background: var(--info-dim);
+          color: #60a5fa;
+          border-color: rgba(96,165,250,0.35);
+        }
+        @media (max-width: 1100px) {
+          .notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 700px) {
+          .notes-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
-      {/* Search & Filter */}
-      <div className="bg-card rounded-lg border border-gold/10 p-4 mb-6">
-        <form onSubmit={handleSearchSubmit} className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Search notes by title, content, or case..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-primary border border-gold/15 rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-gold/30 text-white placeholder-slate-600 text-sm"
-          />
+      <header
+        style={{
+          padding: "28px 40px 20px",
+          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
+          background: "rgba(10, 18, 16, 0.5)",
+          backdropFilter: "blur(10px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "32px", fontWeight: 700, lineHeight: 1 }}>Notes</h1>
+          <p style={{ marginTop: "4px", fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)" }}>
+            Manage your legal notes ({notes.length || sampleNotes.length})
+          </p>
+        </div>
+        <Link to="/notes/create" className="btn-primary">+ New Note</Link>
+      </header>
+
+      <div style={{ padding: "32px 40px" }}>
+        <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "var(--muted)", pointerEvents: "none" }}>
+              <SearchIcon />
+            </span>
+            <input
+              type="text"
+              placeholder="Search notes by title, content, or case..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", color: "var(--white)", fontFamily: "Rajdhani, sans-serif", fontSize: "14px", padding: "12px 16px 12px 44px" }}
+            />
+          </div>
+
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="bg-primary border border-gold/15 rounded px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-gold/30 text-white text-sm"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", color: "var(--muted)", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", fontWeight: 500, padding: "10px 14px", minWidth: "190px" }}
           >
-            <option value="">All Types</option>
-            {NOTE_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
+            <option>All Types</option>
+            <option>Strategy</option>
+            <option>Reminder</option>
+            <option>Client Instruction</option>
+            <option>General</option>
           </select>
-          <button
-            type="submit"
-            className="bg-gold hover:bg-gold/85 text-primary px-5 py-2.5 rounded font-bold text-sm tracking-wider transition-colors"
-          >
-            SEARCH
-          </button>
-        </form>
+        </div>
+
+        {loading ? (
+          <div className="empty-state" style={{ minHeight: "260px" }}>
+            <div className="inline-block animate-spin rounded-full h-8 w-8" style={{ border: "2px solid var(--gold)", borderTopColor: "transparent" }}></div>
+          </div>
+        ) : displayNotes.length > 0 ? (
+          <div className="notes-grid">
+            {displayNotes.map((note) => {
+              const mappedType = mapType(note.note_type);
+              const theme = typeTheme(mappedType);
+              const caseTag = note.case_number || "General";
+              const dateText = new Date(note.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+              return (
+                <Link
+                  key={note.id}
+                  to={String(note.id).startsWith("sample-") ? "/notes/create" : `/notes/${note.id}`}
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderLeft: `4px solid ${theme.border}`,
+                    borderRadius: "3px",
+                    padding: "18px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.borderColor = "rgba(200,168,75,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", gap: "8px" }}>
+                    <h3 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)", paddingRight: "8px", flex: 1 }}>
+                      {note.title}
+                    </h3>
+                    <span className={`badge ${theme.badge}`}>{mappedType}</span>
+                  </div>
+
+                  <p className="note-content-clamp" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "12px", lineHeight: 1.6, color: "var(--muted)", marginBottom: "14px" }}>
+                    {note.content || "No preview available"}
+                  </p>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ background: "var(--gold-dim)", border: "1px solid rgba(200,168,75,0.35)", color: "var(--gold)", fontFamily: "Rajdhani, sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", padding: "3px 8px", borderRadius: "2px" }}>
+                      {caseTag}
+                    </span>
+                    <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "10px", fontWeight: 500, color: "var(--muted2)" }}>
+                      {dateText}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty-state" style={{ minHeight: "300px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--gold-dim)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", marginBottom: "12px" }}>
+              <span style={{ width: "20px", height: "20px" }}><QuillIcon /></span>
+            </div>
+            <p style={{ fontFamily: "Cormorant Garamond, serif", fontStyle: "italic", fontSize: "18px", color: "var(--white)" }}>
+              Your legal notes will appear here
+            </p>
+            <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)", marginBottom: "14px" }}>
+              Begin by creating your first note
+            </p>
+            <Link to="/notes/create" className="btn-primary">Create Note</Link>
+          </div>
+        )}
       </div>
-
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
-            <p className="mt-3 text-slate-400 text-sm">Loading notes...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Notes Table */}
-      {!loading && notes.length > 0 && (
-        <div className="bg-card rounded-lg border border-gold/10 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gold/10">
-              <thead className="bg-primary/50">
-                <tr>
-                  {["Title", "Case", "Type", "Author", "Date", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gold/5">
-                {notes.map((note) => (
-                  <tr key={note.id} className="hover:bg-primary/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <span className="text-sm font-semibold text-white">{note.title}</span>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-400">
-                      {note.case_title || <span className="text-slate-600 italic">No case</span>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-[10px] font-bold tracking-wider px-2 py-1 rounded border ${getTypeStyle(note.note_type)}`}>
-                        {note.note_type}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{note.author || "Advocate"}</td>
-                    <td className="px-5 py-3 text-sm text-slate-500">
-                      {new Date(note.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-5 py-3 text-sm font-medium">
-                      <Link to={`/notes/${note.id}`} className="text-gold hover:text-gold/80 mr-3 font-semibold text-xs tracking-wider">VIEW</Link>
-                      <Link to={`/notes/${note.id}/edit`} className="text-blue-400 hover:text-blue-300 mr-3 font-semibold text-xs tracking-wider">EDIT</Link>
-                      <button onClick={() => deleteNote(note.id)} className="text-red-400 hover:text-red-300 font-semibold text-xs tracking-wider">DELETE</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && notes.length === 0 && (
-        <div className="bg-card rounded-lg border border-gold/10 p-16 text-center">
-          <svg className="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-          <h3 className="text-sm font-bold text-white mt-4 mb-2">No notes found</h3>
-          <p className="text-slate-500 text-sm mb-6">Get started by creating your first note</p>
-          <Link
-            to="/notes/create"
-            className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors"
-          >
-            CREATE NOTE
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
