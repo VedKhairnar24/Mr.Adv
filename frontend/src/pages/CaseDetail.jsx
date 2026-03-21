@@ -1,494 +1,228 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import API from "../services/api";
+import AddHearing from "../components/AddHearing";
+import HearingList from "../components/HearingList";
+import DocumentList from "../components/DocumentList";
+import CaseTimeline from "../components/CaseTimeline";
+import AINotes from "../components/AINotes";
 
-function SearchIcon() {
+function BackArrowIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="M1.5 12s3.5-6 10.5-6 10.5 6 10.5 6-3.5 6-10.5 6S1.5 12 1.5 12z" />
-      <circle cx="12" cy="12" r="3" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19 12H5M12 19l-7-7 7-7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function TrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <rect x="6" y="6" width="12" height="14" rx="2" />
-      <path d="M10 10v6M14 10v6" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h18" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8 6V4h8v2" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="6" y="6" width="12" height="14" rx="2" strokeWidth="1.8" />
+      <path d="M10 10v6M14 10v6" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-/* Shared button style — same pattern as reference */
-const btnStyle = {
-  fontFamily:    'Rajdhani, sans-serif',
-  fontSize:      '11px',
-  fontWeight:    700,
-  letterSpacing: '2.5px',
-  textTransform: 'uppercase',
-};
+function toDisplay(value) {
+  return value && String(value).trim() ? value : "-";
+}
 
-function Cases() {
-  const [cases,        setCases]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [search,       setSearch]       = useState("");
-  const [statusFilter, setStatusFilter] = useState("All Status");
-  const [typeFilter,   setTypeFilter]   = useState("All Types");
-  const [showForm,     setShowForm]     = useState(false);
-  const [formData,     setFormData]     = useState({
-    client_id:  "",
-    case_title: "",
-    case_number:"",
-    court_name: "",
-    case_type:  "",
-    filing_date:"",
-  });
+function toDisplayDate(value) {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
 
-  const fetchCases = async () => {
+export default function CaseDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [caseData, setCaseData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  const statusClass = useMemo(() => {
+    const status = (caseData?.status || "").toLowerCase();
+    if (status === "active") return "active";
+    if (status === "pending" || status === "on hold") return "pending";
+    if (status === "closed") return "closed";
+    return "disposed";
+  }, [caseData?.status]);
+
+  const fetchCase = async () => {
     try {
       setLoading(true);
-      const res = await API.get("/cases/all");
-      setCases(res.data);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching cases:", err);
-      setError("Failed to load cases. Please try again.");
+      const res = await API.get(`/cases/${id}`);
+      setCaseData(res.data);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setCaseData(null);
+      } else {
+        toast.error(error.response?.data?.message || "Failed to load case details");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+    fetchCase();
+  }, [id]);
 
-  const createCase = async (e) => {
-    e.preventDefault();
+  const updateStatus = async (nextStatus) => {
+    if (!caseData || nextStatus === caseData.status) return;
+
     try {
-      await API.post("/cases/create", formData);
-      alert("Case created successfully!");
-      setFormData({ client_id: "", case_title: "", case_number: "", court_name: "", case_type: "", filing_date: "" });
-      setShowForm(false);
-      fetchCases();
-    } catch (err) {
-      console.error("Error creating case:", err);
-      alert(err.response?.data?.message || "Failed to create case");
+      setStatusSaving(true);
+      await API.put(`/cases/${id}/status`, { status: nextStatus });
+      setCaseData((prev) => ({ ...prev, status: nextStatus }));
+      toast.success("Case status updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update status");
+    } finally {
+      setStatusSaving(false);
     }
   };
 
-  const deleteCase = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this case?")) return;
+  const deleteCase = async () => {
+    if (!window.confirm("Delete this case? This action cannot be undone.")) return;
+
     try {
       await API.delete(`/cases/${id}`);
-      fetchCases();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete case");
+      toast.success("Case deleted");
+      navigate("/cases");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete case");
     }
   };
 
-  const getStatusBadgeClass = (status = "") => {
-    const v = status.toLowerCase();
-    if (v === "active" || v === "completed")                     return "badge-active";
-    if (v === "pending" || v === "adjourned" || v === "on hold") return "badge-pending";
-    if (v === "scheduled")                                        return "badge-scheduled";
-    if (v === "closed"  || v === "cancelled")                    return "badge-closed";
-    if (v === "disposed")                                         return "badge-disposed";
-    return "badge-disposed";
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
+          <p className="mt-3 text-slate-400 text-sm">Loading case details...</p>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => { fetchCases(); }, []);
-
-  const inputClass = "w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm";
-
-  const filteredCases = cases.filter((item) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      q === "" ||
-      (item.case_title  || "").toLowerCase().includes(q) ||
-      (item.client_name || "").toLowerCase().includes(q) ||
-      (item.court_name  || "").toLowerCase().includes(q) ||
-      (item.case_number || "").toLowerCase().includes(q);
-    const matchesStatus =
-      statusFilter === "All Status" ||
-      (item.status || "").toLowerCase() === statusFilter.toLowerCase();
-    const matchesType =
-      typeFilter === "All Types" ||
-      (item.case_type || "Other").toLowerCase() === typeFilter.toLowerCase();
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  if (!caseData) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-slate-400 mb-4">Case not found.</p>
+        <Link to="/cases" className="detail-btn-ghost" style={{ textDecoration: "none" }}>
+          <BackArrowIcon /> Back to Cases
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-
-      {/* ── SECTION A: HEADER BAR ── */}
+    <div className="detail-page-shell">
       <header className="app-header">
         <div className="app-header-title-wrap">
-          <h1 className="app-header-title">Cases</h1>
-          <p className="app-header-subtitle">Manage your legal cases</p>
+          <Link to="/cases" className="back-nav-link">
+            <BackArrowIcon />
+            Back to Cases
+          </Link>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <h1 className="app-header-title">{toDisplay(caseData.case_title)}</h1>
+            <span className={`badge badge-${statusClass}`}>{toDisplay(caseData.status).toUpperCase()}</span>
+          </div>
+
+          <p className="app-header-subtitle">Case number: {toDisplay(caseData.case_number)}</p>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary"
-          style={btnStyle}
-        >
-          {showForm ? 'Cancel' : '+ New Case'}
-        </button>
+        <div className="detail-header-actions">
+          <select
+            value={caseData.status || "Pending"}
+            onChange={(e) => updateStatus(e.target.value)}
+            disabled={statusSaving}
+            className="detail-select"
+            style={{ minWidth: "150px", height: "40px" }}
+          >
+            <option value="Pending">Pending</option>
+            <option value="Active">Active</option>
+            <option value="On Hold">On Hold</option>
+            <option value="Closed">Closed</option>
+            <option value="Disposed">Disposed</option>
+          </select>
+
+          <button type="button" className="detail-btn-danger" onClick={deleteCase}>
+            <TrashIcon /> Delete
+          </button>
+        </div>
       </header>
 
-      <div className="app-body">
+      <div className="detail-content detail-two-col">
+        <main>
+          <section className="detail-card with-corners" style={{ marginBottom: "20px" }}>
+            <div className="detail-card-label">Case Information</div>
 
-        {/* ── CREATE CASE FORM ── */}
-        {showForm && (
-          <div className="card" style={{ borderRadius: "3px", padding: "24px", marginBottom: "20px" }}>
-            <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>
-              Create New Case
-            </h2>
-            <form onSubmit={createCase} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CLIENT ID *</label>
-                  <input type="number" name="client_id" value={formData.client_id} onChange={handleInputChange} placeholder="Enter client ID" required className={inputClass} />
-                  <p className="text-[10px] text-slate-600 mt-1">Note: Create clients first in the Clients page</p>
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TITLE *</label>
-                  <input type="text" name="case_title" value={formData.case_title} onChange={handleInputChange} placeholder="e.g., Smith v. Johnson" required className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE NUMBER</label>
-                  <input type="text" name="case_number" value={formData.case_number} onChange={handleInputChange} placeholder="e.g., CV-2024-001" className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">COURT NAME *</label>
-                  <input type="text" name="court_name" value={formData.court_name} onChange={handleInputChange} placeholder="e.g., High Court of Delhi" required className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TYPE</label>
-                  <select name="case_type" value={formData.case_type} onChange={handleInputChange} className={inputClass}>
-                    <option value="">Select Type</option>
-                    <option value="Civil">Civil</option>
-                    <option value="Criminal">Criminal</option>
-                    <option value="Family">Family</option>
-                    <option value="Corporate">Corporate</option>
-                    <option value="Property">Property</option>
-                    <option value="Labor">Labor</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">FILING DATE</label>
-                  <input type="date" name="filing_date" value={formData.filing_date} onChange={handleInputChange} className={inputClass} />
-                </div>
+            <div className="detail-info-grid">
+              <div className="detail-field">
+                <span className="detail-field-label">Case Title</span>
+                <span className="detail-field-value">{toDisplay(caseData.case_title)}</span>
               </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  style={btnStyle}
-                >
-                  Create Case
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="btn-ghost"
-                  style={btnStyle}
-                >
-                  Cancel
-                </button>
+              <div className="detail-field">
+                <span className="detail-field-label">Case Number</span>
+                <span className="detail-field-value mono">{toDisplay(caseData.case_number)}</span>
               </div>
-            </form>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded mb-6 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent" />
-              <p className="mt-3" style={{ color: "var(--muted)", fontFamily: "Rajdhani, sans-serif", fontSize: "12px" }}>
-                Loading cases...
-              </p>
+              <div className="detail-field">
+                <span className="detail-field-label">Case Type</span>
+                <span className="detail-field-value">{toDisplay(caseData.case_type)}</span>
+              </div>
+              <div className="detail-field">
+                <span className="detail-field-label">Court</span>
+                <span className="detail-field-value">{toDisplay(caseData.court_name)}</span>
+              </div>
+              <div className="detail-field">
+                <span className="detail-field-label">Filing Date</span>
+                <span className="detail-field-value">{toDisplayDate(caseData.filing_date)}</span>
+              </div>
+              <div className="detail-field">
+                <span className="detail-field-label">Created</span>
+                <span className="detail-field-value">{toDisplayDate(caseData.created_at)}</span>
+              </div>
             </div>
-          </div>
-        )}
+          </section>
 
-        {!loading && (
-          <>
-            {/* ── SECTION B: FILTER ROW ── */}
-            <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
-
-              {/* Search */}
-              <div style={{ flex: 1, position: "relative" }}>
-                <span className="search-icon"><SearchIcon /></span>
-                <input
-                  type="text"
-                  placeholder="Search cases..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="search-input"
-                  style={{
-                    width: "100%",
-                    background: "var(--surface)",
-                    border: "var(--border-1)",
-                    borderRadius: "3px",
-                    color: "var(--white)",
-                    fontFamily: "Rajdhani, sans-serif",
-                  }}
-                />
+          <section className="detail-card" style={{ marginBottom: "20px" }}>
+            <div className="detail-card-label">Client Information</div>
+            <div className="detail-info-grid">
+              <div className="detail-field">
+                <span className="detail-field-label">Client Name</span>
+                <span className="detail-field-value">{toDisplay(caseData.client_name)}</span>
               </div>
-
-              {/* Status filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "3px",
-                  color: "var(--muted)",
-                  fontFamily: "Rajdhani, sans-serif",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  height: "48px",
-                  minWidth: "140px",
-                  padding: "0 14px",
-                }}
-              >
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Pending</option>
-                <option>Disposed</option>
-                <option>Closed</option>
-              </select>
-
-              {/* Type filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "3px",
-                  color: "var(--muted)",
-                  fontFamily: "Rajdhani, sans-serif",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  height: "48px",
-                  minWidth: "140px",
-                  padding: "0 14px",
-                }}
-              >
-                <option>All Types</option>
-                <option>Civil</option>
-                <option>Criminal</option>
-                <option>Family</option>
-                <option>Corporate</option>
-                <option>Property</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            {/* ── SECTION C: CASES TABLE ── */}
-            {filteredCases.length > 0 && (
-              <div style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "3px",
-                overflow: "hidden",
-              }}>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        {["Case Title", "Client", "Court", "Type", "Status", "Actions"].map((h) => (
-                          <th key={h} style={{
-                            padding: "0 16px",
-                            height: "44px",
-                            textAlign: "left",
-                            fontFamily: "Rajdhani, sans-serif",
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            letterSpacing: "2px",
-                            textTransform: "uppercase",
-                            color: "var(--muted)",
-                            verticalAlign: "middle",
-                          }}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {filteredCases.map((item, index) => {
-                        const id = item._id || item.id;
-                        return (
-                          <tr
-                            key={id}
-                            style={{
-                              borderBottom: index === filteredCases.length - 1 ? "none" : "1px solid rgba(180,150,80,0.08)",
-                              borderLeft: "3px solid transparent",
-                              transition: "all 0.2s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                              e.currentTarget.style.borderLeftColor = "var(--gold)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "transparent";
-                              e.currentTarget.style.borderLeftColor = "transparent";
-                            }}
-                          >
-                            {/* Case Title + Number */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
-                              <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)" }}>
-                                {item.case_title}
-                              </p>
-                              <p style={{ marginTop: "3px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>
-                                {item.case_number || "—"}
-                              </p>
-                            </td>
-
-                            {/* Client */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
-                              {item.client_name || "—"}
-                            </td>
-
-                            {/* Court */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {item.court_name || "—"}
-                            </td>
-
-                            {/* Type */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
-                              <span className="badge badge-disposed">{item.case_type || "Other"}</span>
-                            </td>
-
-                            {/* Status */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
-                              <span className={`badge ${getStatusBadgeClass(item.status)}`}>
-                                {(item.status || "Disposed").toUpperCase()}
-                              </span>
-                            </td>
-
-                            {/* Actions */}
-                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-
-                                {/* VIEW — btn-primary */}
-                                <Link
-                                  to={`/cases/${id}`}
-                                  className="btn-primary"
-                                  style={btnStyle}
-                                >
-                                  View
-                                </Link>
-
-                                {/* DELETE — btn-danger icon only */}
-                                <button
-                                  onClick={() => deleteCase(id)}
-                                  className="btn-danger"
-                                  style={{
-                                    width: "34px",
-                                    height: "34px",
-                                    minHeight: "34px",
-                                    padding: 0,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                  title="Delete case"
-                                >
-                                  <span style={{ width: "14px", height: "14px", display: "flex" }}>
-                                    <TrashIcon />
-                                  </span>
-                                </button>
-
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="detail-field">
+                <span className="detail-field-label">Phone</span>
+                <span className="detail-field-value">{toDisplay(caseData.client_phone)}</span>
               </div>
-            )}
-          </>
-        )}
-
-        {/* ── EMPTY STATE ── */}
-        {!loading && filteredCases.length === 0 && (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "64px 24px",
-            minHeight: "300px",
-            textAlign: "center",
-          }}>
-            <div style={{
-              width: "56px", height: "56px",
-              borderRadius: "50%",
-              background: "var(--gold-dim, rgba(200,168,75,0.1))",
-              border: "1px solid var(--border)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              marginBottom: "16px",
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" style={{ width: "24px", height: "24px" }}>
-                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-              </svg>
+              <div className="detail-field">
+                <span className="detail-field-label">Email</span>
+                <span className="detail-field-value">{toDisplay(caseData.client_email)}</span>
+              </div>
             </div>
+          </section>
 
-            <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600, color: "var(--white)", marginBottom: "8px" }}>
-              No cases found
-            </h3>
-            <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)", marginBottom: "20px", maxWidth: "260px", lineHeight: 1.5 }}>
-              {search || statusFilter !== "All Status" || typeFilter !== "All Types"
-                ? "No cases match your current filters."
-                : "Get started by creating your first case."}
-            </p>
+          <DocumentList caseId={id} />
+          <CaseTimeline caseId={id} />
+          <AINotes caseId={id} />
+        </main>
 
-            {!search && statusFilter === "All Status" && typeFilter === "All Types" && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="btn-primary"
-                style={btnStyle}
-              >
-                + Create Case
-              </button>
-            )}
-          </div>
-        )}
-
+        <aside>
+          <AddHearing caseId={id} />
+          <div style={{ height: "20px" }} />
+          <HearingList caseId={id} />
+        </aside>
       </div>
     </div>
   );
 }
-
-export default Cases;
