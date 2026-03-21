@@ -1,25 +1,120 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import API from '../services/api';
+import '../styles/auth.css';
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function LayeredLogoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3L2 8l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
+function ScalesOfJustice() {
+  return (
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <rect x="97" y="60" width="6" height="110" fill="#c8a84b" rx="2" />
+      <rect x="72" y="167" width="56" height="8" fill="#c8a84b" rx="2" />
+      <rect x="30" y="78" width="140" height="5" fill="#c8a84b" rx="2" />
+      <circle cx="100" cy="80" r="16" fill="#0d1a17" stroke="#c8a84b" strokeWidth="2" />
+      <circle cx="100" cy="80" r="9" fill="#c8a84b" opacity="0.9" />
+      <line x1="54" y1="83" x2="45" y2="123" stroke="#c8a84b" strokeWidth="2" />
+      <line x1="70" y1="83" x2="54" y2="123" stroke="#c8a84b" strokeWidth="2" />
+      <ellipse cx="39" cy="130" rx="24" ry="7" fill="#c8a84b" />
+      <line x1="130" y1="83" x2="152" y2="110" stroke="#c8a84b" strokeWidth="2" />
+      <line x1="146" y1="83" x2="162" y2="110" stroke="#c8a84b" strokeWidth="2" />
+      <ellipse cx="161" cy="116" rx="20" ry="6" fill="#c8a84b" />
+    </svg>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <svg className="auth-spinner" viewBox="0 0 20 20" aria-hidden="true">
+      <circle cx="10" cy="10" r="8" fill="none" strokeWidth="2" />
+    </svg>
+  );
+}
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: '',
     password: ''
   });
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value) => {
+    if (name === 'email') {
+      if (!value.trim()) {
+        return 'Please enter your email';
+      }
+      if (!emailRegex.test(value.trim())) {
+        return 'Please enter a valid email';
+      }
+    }
+
+    if (name === 'password' && !value) {
+      return 'Please enter your password';
+    }
+
+    return '';
+  };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setForm({
       ...form,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    if (touched[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: validateField(name, value)
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: validateField(name, value)
+    }));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      email: validateField('email', form.email),
+      password: validateField('password', form.password)
+    };
+
+    setErrors(nextErrors);
+    return !Object.values(nextErrors).some(Boolean);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setTouched({ email: true, password: true });
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -40,75 +135,113 @@ function Login() {
     }
   };
 
+  const canSubmit = useMemo(
+    () => emailRegex.test(form.email.trim()) && form.password.length > 0,
+    [form.email, form.password]
+  );
+
+  const formEnterClass = location.state?.from === 'register' ? 'auth-enter-left' : 'auth-enter-left';
+
   return (
-    <div className="min-h-screen flex justify-center items-center bg-primary px-4">
-      <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-card shadow-2xl rounded-lg p-8 border border-gold/10">
-          {/* Gold scales icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary">
-              <svg className="w-8 h-8 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 3v18M12 3l-8 6h16l-8-6zM4 9l2 8h2l-2-8M16 9l2 8h-2l-2-8M8 21h8M6 17h2M16 17h2" />
-              </svg>
+    <div className="auth-page auth-transition-enter">
+      <div className="auth-blob auth-blob-1" aria-hidden="true" />
+      <div className="auth-blob auth-blob-2" aria-hidden="true" />
+      <div className="auth-noise" aria-hidden="true" />
+
+      <section className="auth-left">
+        <div className="auth-left-content">
+          <div className="scales-wrap">
+            <ScalesOfJustice />
+          </div>
+          <p className="auth-quote">"The first duty of society is justice."</p>
+          <p className="auth-attribution">- Alexander Hamilton</p>
+          <div className="auth-divider-line" />
+        </div>
+      </section>
+
+      <section className="auth-right">
+        <div className={`auth-form-wrap ${formEnterClass}`}>
+          <div className="auth-logo-row">
+            <div className="auth-logo-box" aria-hidden="true">
+              <LayeredLogoIcon />
+            </div>
+            <div className="auth-brand">
+              <p className="auth-brand-name">Mr. Advocate</p>
+              <p className="auth-brand-sub">Case Management System</p>
             </div>
           </div>
 
-          <h1 className="text-xl font-extrabold text-white text-center tracking-wide">MR. ADVOCATE</h1>
-          <p className="text-slate-500 text-xs text-center mt-1 tracking-wider">CASE MANAGEMENT SYSTEM</p>
-
-          <h2 className="text-lg font-bold text-white mt-8 mb-6 text-center">Sign In</h2>
+          <div className="auth-title-block">
+            <h1 className="auth-title">Sign In</h1>
+            <p className="auth-subtitle">Access your legal practice dashboard</p>
+          </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">EMAIL ADDRESS</label>
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="email">EMAIL ADDRESS</label>
               <input
+                id="email"
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
-                required
+                className={`auth-input ${errors.email ? 'is-error' : ''}`}
+                autoComplete="email"
               />
+              {errors.email ? <p className="auth-error">{errors.email}</p> : null}
             </div>
 
-            <div className="mb-6">
-              <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PASSWORD</label>
+            <div className="auth-field" style={{ marginBottom: 8 }}>
+              <label className="auth-label" htmlFor="password">PASSWORD</label>
               <input
+                id="password"
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm"
-                required
+                className={`auth-input ${errors.password ? 'is-error' : ''}`}
+                autoComplete="current-password"
               />
+              {errors.password ? <p className="auth-error">{errors.password}</p> : null}
+              <a className="auth-forgot" href="#">Forgot password?</a>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className={`w-full py-3 rounded font-bold text-sm tracking-wider transition-colors ${
-                loading
-                  ? 'bg-gold/40 cursor-not-allowed text-primary/60'
-                  : 'bg-gold hover:bg-gold/85 text-primary'
-              }`}
+              disabled={loading || !canSubmit}
+              className="auth-cta"
             >
-              {loading ? 'SIGNING IN...' : 'SIGN IN'}
+              {loading ? (
+                <>
+                  <LoadingSpinner />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-slate-500 text-sm">
+          <div className="auth-divider" aria-hidden="true">
+            <div className="auth-divider-line-half" />
+            <span className="auth-divider-text">Or</span>
+            <div className="auth-divider-line-half" />
+          </div>
+
+          <div className="auth-link-row">
+            <p>
               Don't have an account?{' '}
-              <Link to="/register" className="text-gold hover:text-gold/80 font-semibold">
+              <Link to="/register" state={{ from: 'login' }} className="auth-link">
                 Register
               </Link>
             </p>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

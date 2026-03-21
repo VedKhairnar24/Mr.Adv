@@ -104,24 +104,24 @@ function NoteForm() {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <button onClick={() => navigate("/notes")}
-          className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider mb-3 inline-block">
-          ← BACK TO NOTES
-        </button>
-        <h1 className="text-2xl font-extrabold text-white tracking-wide">
-          {isEdit ? "Edit Note" : "Create Note"}
-        </h1>
-        <p className="text-slate-500 text-sm mt-1">
-          {isEdit ? "Update your note details" : "Write a new legal note"}
-        </p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <button
+            onClick={() => navigate("/notes")}
+            className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider inline-block text-left"
+            style={{ marginBottom: "8px" }}
+          >
+            ← BACK TO NOTES
+          </button>
+          <h1 className="app-header-title">{isEdit ? "Edit Note" : "Create Note"}</h1>
+          <p className="app-header-subtitle">{isEdit ? "Update your note details" : "Write a new legal note"}</p>
+        </div>
+      </header>
 
-      {/* Form */}
-      <div className="bg-card rounded-lg border border-gold/10 p-6">
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="app-body" style={{ maxWidth: "980px" }}>
+        <div className="card" style={{ borderRadius: "4px", padding: "32px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Case Dropdown */}
             <div>
@@ -167,8 +167,9 @@ function NoteForm() {
               value={formData.content}
               onChange={handleChange}
               placeholder="Write your note content here..."
-              rows="10"
+              rows="12"
               className={inputClass}
+              style={{ minHeight: "260px", paddingTop: "14px", paddingBottom: "14px" }}
               required
             />
           </div>
@@ -187,25 +188,28 @@ function NoteForm() {
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2" style={{ alignItems: "center" }}>
             <button
               type="submit"
               disabled={saving}
-              className={`px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
+              className={`px-6 rounded font-bold text-sm tracking-wider transition-colors ${
                 saving ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
               }`}
+              style={{ height: "44px", minHeight: "44px" }}
             >
               {saving ? "SAVING..." : isEdit ? "UPDATE NOTE" : "SAVE NOTE"}
             </button>
             <button
               type="button"
               onClick={() => navigate("/notes")}
-              className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors"
+              className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 rounded font-bold text-sm tracking-wider transition-colors"
+              style={{ height: "44px", minHeight: "44px" }}
             >
               CANCEL
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

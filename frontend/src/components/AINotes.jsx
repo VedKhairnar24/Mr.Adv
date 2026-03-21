@@ -117,25 +117,19 @@ export default function AINotes({ caseId }) {
   };
 
   return (
-    <div className="bg-card rounded-lg border border-gold/10 p-6 mb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full border border-gold/30 bg-gold/10 flex items-center justify-center">
-            <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-            </svg>
-          </div>
-          <h2 className="text-sm font-bold text-white tracking-wide">AI LEGAL ANALYSIS</h2>
+    <div className="detail-card" style={{ padding: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          <h2 className="detail-card-label" style={{ marginBottom: 0 }}>AI Legal Analysis</h2>
         </div>
         <button
           onClick={generateInsights}
           disabled={generating}
-          className={`flex items-center gap-2 px-4 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
-            generating
-              ? "bg-slate-700 cursor-not-allowed text-slate-500"
-              : "bg-gold hover:bg-gold/85 text-primary"
-          }`}
+          className={`detail-btn-ghost ${generating ? "opacity-60 cursor-not-allowed" : ""}`}
+          style={{ height: "34px", padding: "0 14px", color: generating ? "var(--muted)" : "var(--gold)", background: "var(--gold-dim)" }}
         >
           {generating ? (
             <>
@@ -162,12 +156,23 @@ export default function AINotes({ caseId }) {
 
       {/* Empty state */}
       {!loading && notes.length === 0 && (
-        <div className="text-center py-10 border border-dashed border-gold/15 rounded-lg">
-          <svg className="mx-auto w-10 h-10 text-slate-600 mb-3" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+        <div
+          style={{
+            border: "1px dashed rgba(200, 168, 75, 0.25)",
+            borderRadius: "3px",
+            padding: "20px",
+            minHeight: "80px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <svg className="mx-auto w-5 h-5 text-gold/40 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
           </svg>
-          <p className="text-slate-500 text-sm">No AI analysis generated yet.</p>
-          <p className="text-slate-600 text-xs mt-1">Click "Generate AI Insights" to analyze this case.</p>
+          <p className="text-slate-400 text-sm">No AI analysis generated yet.</p>
         </div>
       )}
 

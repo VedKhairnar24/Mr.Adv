@@ -142,43 +142,10 @@ function Cases() {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* SECTION A: HEADER BAR */}
-      <header
-        style={{
-          padding: "28px 40px 20px",
-          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
-          background: "rgba(10, 18, 16, 0.5)",
-          backdropFilter: "blur(10px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontFamily: "Cormorant Garamond, serif",
-              fontSize: "32px",
-              fontWeight: 700,
-              lineHeight: 1,
-              color: "var(--white)",
-            }}
-          >
-            Cases
-          </h1>
-          <p
-            style={{
-              marginTop: "4px",
-              fontFamily: "Rajdhani, sans-serif",
-              fontSize: "12px",
-              fontWeight: 500,
-              color: "var(--muted)",
-            }}
-          >
-            Manage your legal cases
-          </p>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Cases</h1>
+          <p className="app-header-subtitle">Manage your legal cases</p>
         </div>
 
         <button
@@ -196,7 +163,7 @@ function Cases() {
         </button>
       </header>
 
-      <div style={{ padding: "32px 40px" }}>
+      <div className="app-body">
 
       {/* Create Case Form */}
       {showForm && (
@@ -267,20 +234,9 @@ function Cases() {
       {!loading && (
         <>
           {/* SECTION B: FILTER ROW */}
-          <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
             <div style={{ flex: 1, position: "relative" }}>
-              <span
-                style={{
-                  position: "absolute",
-                  left: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                  color: "var(--muted)",
-                  pointerEvents: "none",
-                }}
-              >
+              <span className="search-icon">
                 <SearchIcon />
               </span>
               <input
@@ -288,15 +244,14 @@ function Cases() {
                 placeholder="Search cases..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                className="search-input"
                 style={{
                   width: "100%",
                   background: "var(--surface)",
-                  border: "1px solid var(--border)",
+                  border: "var(--border-1)",
                   borderRadius: "3px",
                   color: "var(--white)",
-                  fontFamily: "Rajdhani, sans-serif",
-                  fontSize: "14px",
-                  padding: "12px 16px 12px 44px",
+                  fontFamily: "Rajdhani, sans-serif"
                 }}
               />
             </div>
@@ -312,8 +267,9 @@ function Cases() {
                 fontFamily: "Rajdhani, sans-serif",
                 fontSize: "13px",
                 fontWeight: 500,
-                padding: "10px 14px",
-                minWidth: "150px",
+                height: "48px",
+                minWidth: "140px",
+                padding: "0 40px 0 14px",
               }}
             >
               <option>All Status</option>
@@ -334,8 +290,9 @@ function Cases() {
                 fontFamily: "Rajdhani, sans-serif",
                 fontSize: "13px",
                 fontWeight: 500,
-                padding: "10px 14px",
-                minWidth: "150px",
+                height: "48px",
+                minWidth: "140px",
+                padding: "0 40px 0 14px",
               }}
             >
               <option>All Types</option>
@@ -359,7 +316,7 @@ function Cases() {
               }}
             >
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <table className="cases-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--border)" }}>
                       {[
@@ -373,7 +330,8 @@ function Cases() {
                         <th
                           key={heading}
                           style={{
-                            padding: "14px 16px",
+                            padding: "0 16px",
+                            height: "44px",
                             textAlign: "left",
                             fontFamily: "Rajdhani, sans-serif",
                             fontSize: "10px",
@@ -413,7 +371,7 @@ function Cases() {
                             e.currentTarget.style.borderLeftColor = "transparent";
                           }}
                         >
-                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
                             <p
                               style={{
                                 fontFamily: "Rajdhani, sans-serif",
@@ -426,7 +384,7 @@ function Cases() {
                             </p>
                             <p
                               style={{
-                                marginTop: "2px",
+                                marginTop: "3px",
                                 fontFamily: "JetBrains Mono, monospace",
                                 fontSize: "11px",
                                 color: "var(--gold)",
@@ -438,7 +396,8 @@ function Cases() {
 
                           <td
                             style={{
-                              padding: "14px 16px",
+                              padding: "0 16px",
+                              height: "60px",
                               verticalAlign: "middle",
                               fontFamily: "Rajdhani, sans-serif",
                               fontSize: "13px",
@@ -451,7 +410,8 @@ function Cases() {
 
                           <td
                             style={{
-                              padding: "14px 16px",
+                              padding: "0 16px",
+                              height: "60px",
                               verticalAlign: "middle",
                               fontFamily: "Rajdhani, sans-serif",
                               fontSize: "13px",
@@ -466,24 +426,26 @@ function Cases() {
                             {courtText}
                           </td>
 
-                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
                             <span className="badge badge-disposed">{typeText}</span>
                           </td>
 
-                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
                             <span className={`badge ${getStatusBadgeClass(item.status)}`}>
                               {(item.status || "Disposed").toUpperCase()}
                             </span>
                           </td>
 
-                          <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", height: "60px" }}>
                               <Link
                                 to={`/cases/${id}`}
                                 className="btn-ghost"
                                 style={{
-                                  padding: "5px 12px",
-                                  fontSize: "11px",
+                                  height: "34px",
+                                  minHeight: "34px",
+                                  padding: "0 14px",
+                                  fontSize: "10px",
                                   color: "var(--gold)",
                                   borderColor: "rgba(200, 168, 75, 0.35)",
                                   gap: "6px",
@@ -498,7 +460,7 @@ function Cases() {
                               <button
                                 onClick={() => deleteCase(id)}
                                 className="btn-danger"
-                                style={{ padding: "10px" }}
+                                style={{ width: "34px", height: "34px", minHeight: "34px", padding: 0, justifyContent: "center" }}
                                 title="Delete case"
                               >
                                 <span style={{ width: "14px", height: "14px" }}>

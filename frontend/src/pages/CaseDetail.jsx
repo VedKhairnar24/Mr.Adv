@@ -1,371 +1,494 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import API from "../services/api";
-import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
-import AddHearing from "../components/AddHearing";
-import HearingList from "../components/HearingList";
-import CaseTimeline from "../components/CaseTimeline";
-import DocumentList from "../components/DocumentList";
-import AINotes from "../components/AINotes";
+import API from "../services/api";
 
-function CaseDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [caseData, setCaseData] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [caseNotes, setCaseNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [uploading, setUploading] = useState(false);
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [viewerDoc, setViewerDoc] = useState(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
 
-  const statusOptions = ["Pending", "Active", "On Hold", "Closed", "Disposed"];
-  const statusColors = {
-    Pending: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
-    Active: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    "On Hold": "text-orange-400 border-orange-500/30 bg-orange-500/10",
-    Closed: "text-slate-400 border-slate-500/30 bg-slate-500/10",
-    Disposed: "text-red-400 border-red-500/30 bg-red-500/10",
-  };
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M1.5 12s3.5-6 10.5-6 10.5 6 10.5 6-3.5 6-10.5 6S1.5 12 1.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
-  const handleStatusChange = async (newStatus) => {
-    if (newStatus === caseData.status) return;
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <rect x="6" y="6" width="12" height="14" rx="2" />
+      <path d="M10 10v6M14 10v6" />
+    </svg>
+  );
+}
+
+/* Shared button style — same pattern as reference */
+const btnStyle = {
+  fontFamily:    'Rajdhani, sans-serif',
+  fontSize:      '11px',
+  fontWeight:    700,
+  letterSpacing: '2.5px',
+  textTransform: 'uppercase',
+};
+
+function Cases() {
+  const [cases,        setCases]        = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [search,       setSearch]       = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [typeFilter,   setTypeFilter]   = useState("All Types");
+  const [showForm,     setShowForm]     = useState(false);
+  const [formData,     setFormData]     = useState({
+    client_id:  "",
+    case_title: "",
+    case_number:"",
+    court_name: "",
+    case_type:  "",
+    filing_date:"",
+  });
+
+  const fetchCases = async () => {
     try {
-      setUpdatingStatus(true);
-      await API.put(`/cases/status/${id}`, { status: newStatus });
-      setCaseData((prev) => ({ ...prev, status: newStatus }));
-      toast.success(`Status updated to "${newStatus}"`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update status");
+      setLoading(true);
+      const res = await API.get("/cases/all");
+      setCases(res.data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching cases:", err);
+      setError("Failed to load cases. Please try again.");
     } finally {
-      setUpdatingStatus(false);
+      setLoading(false);
     }
   };
 
-  const loadCase = async () => {
-    try {
-      const res = await API.get(`/cases/${id}`);
-      setCaseData(res.data);
-    } catch (error) {
-      console.error("Error loading case:", error);
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const loadDocuments = async () => {
-    try {
-      const res = await API.get(`/documents/case/${id}`);
-      setDocuments(res.data);
-    } catch (error) {
-      console.error("Error loading documents:", error);
-    }
-  };
-
-  const loadCaseNotes = async () => {
-    try {
-      const res = await API.get(`/notes/case/${id}`);
-      setCaseNotes(res.data);
-    } catch (error) {
-      console.error("Error loading case notes:", error);
-    }
-  };
-
-  const deleteDocument = async (docId) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
-    try {
-      await API.delete(`/documents/${docId}`);
-      toast.success("Document deleted successfully");
-      loadDocuments();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete document");
-    }
-  };
-
-  const getDocUrl = (filePath) => {
-    const normalized = filePath.replace(/\\/g, '/').replace(/^\//, '');
-    return `http://localhost:5000/${normalized}`;
-  };
-
-  const isPdf = (doc) => {
-    return doc.file_type?.toLowerCase().includes('pdf') || doc.file_path?.toLowerCase().endsWith('.pdf');
-  };
-
-  const isImage = (doc) => {
-    return doc.file_type?.includes('image') || doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-  };
-
-  const uploadDocument = async (e) => {
+  const createCase = async (e) => {
     e.preventDefault();
-    if (!selectedFile || !uploadTitle) {
-      toast.error("Please select a file and enter a title");
-      return;
-    }
     try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("title", uploadTitle);
-      formData.append("case_id", id);
-      await API.post("/documents/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
-      toast.success("Document uploaded successfully!");
-      setUploadTitle("");
-      setSelectedFile(null);
-      loadDocuments();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to upload document");
-    } finally {
-      setUploading(false);
+      await API.post("/cases/create", formData);
+      alert("Case created successfully!");
+      setFormData({ client_id: "", case_title: "", case_number: "", court_name: "", case_type: "", filing_date: "" });
+      setShowForm(false);
+      fetchCases();
+    } catch (err) {
+      console.error("Error creating case:", err);
+      alert(err.response?.data?.message || "Failed to create case");
     }
   };
 
-  useEffect(() => {
-    loadCase();
-    loadDocuments();
-    loadCaseNotes();
-    setLoading(false);
-  }, []);
+  const deleteCase = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this case?")) return;
+    try {
+      await API.delete(`/cases/${id}`);
+      fetchCases();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete case");
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent"></div>
-          <p className="mt-3 text-slate-400 text-sm">Loading case details...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusBadgeClass = (status = "") => {
+    const v = status.toLowerCase();
+    if (v === "active" || v === "completed")                     return "badge-active";
+    if (v === "pending" || v === "adjourned" || v === "on hold") return "badge-pending";
+    if (v === "scheduled")                                        return "badge-scheduled";
+    if (v === "closed"  || v === "cancelled")                    return "badge-closed";
+    if (v === "disposed")                                         return "badge-disposed";
+    return "badge-disposed";
+  };
 
-  if (!caseData) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-slate-400 mb-4">Case not found</p>
-        <button onClick={() => navigate("/cases")}
-          className="bg-gold hover:bg-gold/85 text-primary px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-          BACK TO CASES
-        </button>
-      </div>
-    );
-  }
+  useEffect(() => { fetchCases(); }, []);
 
-  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+  const inputClass = "w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm";
+
+  const filteredCases = cases.filter((item) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      q === "" ||
+      (item.case_title  || "").toLowerCase().includes(q) ||
+      (item.client_name || "").toLowerCase().includes(q) ||
+      (item.court_name  || "").toLowerCase().includes(q) ||
+      (item.case_number || "").toLowerCase().includes(q);
+    const matchesStatus =
+      statusFilter === "All Status" ||
+      (item.status || "").toLowerCase() === statusFilter.toLowerCase();
+    const matchesType =
+      typeFilter === "All Types" ||
+      (item.case_type || "Other").toLowerCase() === typeFilter.toLowerCase();
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <button onClick={() => navigate("/cases")}
-          className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider mb-3 inline-block">
-          ← BACK TO CASES
+    <div style={{ display: "flex", flexDirection: "column" }}>
+
+      {/* ── SECTION A: HEADER BAR ── */}
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Cases</h1>
+          <p className="app-header-subtitle">Manage your legal cases</p>
+        </div>
+
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="btn-primary"
+          style={btnStyle}
+        >
+          {showForm ? 'Cancel' : '+ New Case'}
         </button>
-        <h1 className="text-2xl font-extrabold text-white tracking-wide">Case Details</h1>
-      </div>
+      </header>
 
-      {/* Case Information Card */}
-      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
-        <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CASE INFORMATION</h2>
-        <div className="grid grid-cols-2 gap-5">
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE TITLE</p>
-            <p className="font-semibold text-white text-sm">{caseData.case_title}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE NUMBER</p>
-            <p className="font-semibold text-white text-sm">{caseData.case_number || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">COURT</p>
-            <p className="font-semibold text-white text-sm">{caseData.court_name}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CASE TYPE</p>
-            <p className="font-semibold text-white text-sm">{caseData.case_type || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">STATUS</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <select
-                value={caseData.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                disabled={updatingStatus}
-                className={`text-[10px] font-bold tracking-wider px-2.5 py-1.5 rounded border cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 ${
-                  statusColors[caseData.status] || "text-blue-400 border-blue-500/30 bg-blue-500/10"
-                } ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              {updatingStatus && (
-                <div className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-gold border-t-transparent"></div>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">FILING DATE</p>
-            <p className="font-semibold text-white text-sm">
-              {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString('en-IN') : "N/A"}
-            </p>
-          </div>
-        </div>
-      </div>
+      <div className="app-body">
 
-      {/* Client Information Card */}
-      {caseData.client_name && (
-        <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
-          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CLIENT INFORMATION</h2>
-          <div className="grid grid-cols-2 gap-5">
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CLIENT NAME</p>
-              <p className="font-semibold text-white text-sm">{caseData.client_name}</p>
-            </div>
-            {caseData.client_phone && (
-              <div>
-                <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">PHONE</p>
-                <p className="font-semibold text-white text-sm">{caseData.client_phone}</p>
-              </div>
-            )}
-            {caseData.client_email && (
-              <div>
-                <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">EMAIL</p>
-                <p className="font-semibold text-white text-sm">{caseData.client_email}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Upload Document Section */}
-      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
-        <h2 className="text-sm font-bold mb-5 text-white tracking-wide">UPLOAD DOCUMENT</h2>
-        <form onSubmit={uploadDocument} className="p-4 border border-gold/10 rounded bg-primary/50">
-          <div className="mb-3">
-            <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">DOCUMENT TITLE</label>
-            <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)}
-              placeholder="e.g., Evidence PDF, Contract, etc." className={inputClass} required />
-          </div>
-          <div className="mb-3">
-            <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">SELECT FILE</label>
-            <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
-              className="w-full px-3 py-2 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white text-sm file:bg-gold file:text-primary file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 file:font-bold file:text-xs"
-              required />
-            <p className="text-[10px] text-slate-600 mt-1">Max file size: 10MB</p>
-          </div>
-          <button type="submit" disabled={uploading}
-            className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
-              uploading ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
-            }`}>
-            {uploading ? "UPLOADING..." : "UPLOAD"}
-          </button>
-        </form>
-      </div>
-
-      {/* Documents Table */}
-      <DocumentList caseId={id} />
-
-      {/* AI Legal Analysis */}
-      <AINotes caseId={id} />
-
-      {/* PDF / Image Viewer Modal */}
-      {viewerDoc && (
-        <div className="fixed inset-0 bg-white/80 z-50 flex flex-col">
-          <div className="bg-card px-6 py-3 flex items-center justify-between border-b border-gold/10">
-            <div className="flex items-center space-x-3">
-              {isPdf(viewerDoc) ? (
-                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                </svg>
-              )}
-              <div>
-                <h3 className="font-bold text-white text-sm">{viewerDoc.document_name}</h3>
-                <p className="text-[10px] text-slate-500">
-                  {isPdf(viewerDoc) ? 'PDF' : 'Image'} · {viewerDoc.file_size ? `${(viewerDoc.file_size / 1024).toFixed(1)} KB` : ''}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <a href={getDocUrl(viewerDoc.file_path)} download={viewerDoc.document_name}
-                className="text-emerald-400 text-xs font-bold tracking-wider px-3 py-1.5 border border-emerald-500/30 rounded hover:bg-emerald-500/10 transition-colors">
-                DOWNLOAD
-              </a>
-              <a href={getDocUrl(viewerDoc.file_path)} target="_blank" rel="noopener noreferrer"
-                className="text-gold text-xs font-bold tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
-                OPEN TAB
-              </a>
-              <button onClick={() => setViewerDoc(null)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-primary rounded transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 overflow-auto p-2">
-            {isPdf(viewerDoc) ? (
-              <iframe src={getDocUrl(viewerDoc.file_path)} className="w-full h-full rounded bg-white" title={viewerDoc.document_name} />
-            ) : isImage(viewerDoc) ? (
-              <div className="flex items-center justify-center h-full">
-                <img src={getDocUrl(viewerDoc.file_path)} alt={viewerDoc.document_name} className="max-w-full max-h-full object-contain rounded" />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-white">
-                <p>Preview not available for this file type. Use the download button.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Case Notes Section */}
-      <div className="bg-card p-6 rounded-lg border border-gold/10 mb-6">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-sm font-bold text-white tracking-wide">CASE NOTES</h2>
-          <Link
-            to={`/notes/create?case_id=${id}`}
-            className="text-gold text-xs font-bold tracking-wider px-3 py-1.5 border border-gold/30 rounded hover:bg-gold/10 transition-colors"
-          >
-            + ADD NOTE
-          </Link>
-        </div>
-        {caseNotes.length === 0 ? (
-          <p className="text-slate-500 text-sm">No notes for this case yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {caseNotes.map((note) => (
-              <Link
-                key={note.id}
-                to={`/notes/${note.id}`}
-                className="flex justify-between items-center p-3 bg-primary/50 rounded border border-gold/5 hover:border-gold/20 transition-colors group"
-              >
+        {/* ── CREATE CASE FORM ── */}
+        {showForm && (
+          <div className="card" style={{ borderRadius: "3px", padding: "24px", marginBottom: "20px" }}>
+            <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>
+              Create New Case
+            </h2>
+            <form onSubmit={createCase} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-white group-hover:text-gold transition-colors">{note.title}</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {note.note_type} · {new Date(note.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                  </p>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CLIENT ID *</label>
+                  <input type="number" name="client_id" value={formData.client_id} onChange={handleInputChange} placeholder="Enter client ID" required className={inputClass} />
+                  <p className="text-[10px] text-slate-600 mt-1">Note: Create clients first in the Clients page</p>
                 </div>
-                <span className="text-gold text-xs font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">VIEW →</span>
-              </Link>
-            ))}
+                <div>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TITLE *</label>
+                  <input type="text" name="case_title" value={formData.case_title} onChange={handleInputChange} placeholder="e.g., Smith v. Johnson" required className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE NUMBER</label>
+                  <input type="text" name="case_number" value={formData.case_number} onChange={handleInputChange} placeholder="e.g., CV-2024-001" className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">COURT NAME *</label>
+                  <input type="text" name="court_name" value={formData.court_name} onChange={handleInputChange} placeholder="e.g., High Court of Delhi" required className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TYPE</label>
+                  <select name="case_type" value={formData.case_type} onChange={handleInputChange} className={inputClass}>
+                    <option value="">Select Type</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Criminal">Criminal</option>
+                    <option value="Family">Family</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Property">Property</option>
+                    <option value="Labor">Labor</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">FILING DATE</label>
+                  <input type="date" name="filing_date" value={formData.filing_date} onChange={handleInputChange} className={inputClass} />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={btnStyle}
+                >
+                  Create Case
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="btn-ghost"
+                  style={btnStyle}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded mb-6 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent" />
+              <p className="mt-3" style={{ color: "var(--muted)", fontFamily: "Rajdhani, sans-serif", fontSize: "12px" }}>
+                Loading cases...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!loading && (
+          <>
+            {/* ── SECTION B: FILTER ROW ── */}
+            <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
+
+              {/* Search */}
+              <div style={{ flex: 1, position: "relative" }}>
+                <span className="search-icon"><SearchIcon /></span>
+                <input
+                  type="text"
+                  placeholder="Search cases..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="search-input"
+                  style={{
+                    width: "100%",
+                    background: "var(--surface)",
+                    border: "var(--border-1)",
+                    borderRadius: "3px",
+                    color: "var(--white)",
+                    fontFamily: "Rajdhani, sans-serif",
+                  }}
+                />
+              </div>
+
+              {/* Status filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--muted)",
+                  fontFamily: "Rajdhani, sans-serif",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  height: "48px",
+                  minWidth: "140px",
+                  padding: "0 14px",
+                }}
+              >
+                <option>All Status</option>
+                <option>Active</option>
+                <option>Pending</option>
+                <option>Disposed</option>
+                <option>Closed</option>
+              </select>
+
+              {/* Type filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--muted)",
+                  fontFamily: "Rajdhani, sans-serif",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  height: "48px",
+                  minWidth: "140px",
+                  padding: "0 14px",
+                }}
+              >
+                <option>All Types</option>
+                <option>Civil</option>
+                <option>Criminal</option>
+                <option>Family</option>
+                <option>Corporate</option>
+                <option>Property</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            {/* ── SECTION C: CASES TABLE ── */}
+            {filteredCases.length > 0 && (
+              <div style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                overflow: "hidden",
+              }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                        {["Case Title", "Client", "Court", "Type", "Status", "Actions"].map((h) => (
+                          <th key={h} style={{
+                            padding: "0 16px",
+                            height: "44px",
+                            textAlign: "left",
+                            fontFamily: "Rajdhani, sans-serif",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "2px",
+                            textTransform: "uppercase",
+                            color: "var(--muted)",
+                            verticalAlign: "middle",
+                          }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {filteredCases.map((item, index) => {
+                        const id = item._id || item.id;
+                        return (
+                          <tr
+                            key={id}
+                            style={{
+                              borderBottom: index === filteredCases.length - 1 ? "none" : "1px solid rgba(180,150,80,0.08)",
+                              borderLeft: "3px solid transparent",
+                              transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                              e.currentTarget.style.borderLeftColor = "var(--gold)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.borderLeftColor = "transparent";
+                            }}
+                          >
+                            {/* Case Title + Number */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                              <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)" }}>
+                                {item.case_title}
+                              </p>
+                              <p style={{ marginTop: "3px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>
+                                {item.case_number || "—"}
+                              </p>
+                            </td>
+
+                            {/* Client */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
+                              {item.client_name || "—"}
+                            </td>
+
+                            {/* Court */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {item.court_name || "—"}
+                            </td>
+
+                            {/* Type */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                              <span className="badge badge-disposed">{item.case_type || "Other"}</span>
+                            </td>
+
+                            {/* Status */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                              <span className={`badge ${getStatusBadgeClass(item.status)}`}>
+                                {(item.status || "Disposed").toUpperCase()}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+
+                                {/* VIEW — btn-primary */}
+                                <Link
+                                  to={`/cases/${id}`}
+                                  className="btn-primary"
+                                  style={btnStyle}
+                                >
+                                  View
+                                </Link>
+
+                                {/* DELETE — btn-danger icon only */}
+                                <button
+                                  onClick={() => deleteCase(id)}
+                                  className="btn-danger"
+                                  style={{
+                                    width: "34px",
+                                    height: "34px",
+                                    minHeight: "34px",
+                                    padding: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                  title="Delete case"
+                                >
+                                  <span style={{ width: "14px", height: "14px", display: "flex" }}>
+                                    <TrashIcon />
+                                  </span>
+                                </button>
+
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── EMPTY STATE ── */}
+        {!loading && filteredCases.length === 0 && (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "64px 24px",
+            minHeight: "300px",
+            textAlign: "center",
+          }}>
+            <div style={{
+              width: "56px", height: "56px",
+              borderRadius: "50%",
+              background: "var(--gold-dim, rgba(200,168,75,0.1))",
+              border: "1px solid var(--border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: "16px",
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" style={{ width: "24px", height: "24px" }}>
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+              </svg>
+            </div>
+
+            <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600, color: "var(--white)", marginBottom: "8px" }}>
+              No cases found
+            </h3>
+            <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)", marginBottom: "20px", maxWidth: "260px", lineHeight: 1.5 }}>
+              {search || statusFilter !== "All Status" || typeFilter !== "All Types"
+                ? "No cases match your current filters."
+                : "Get started by creating your first case."}
+            </p>
+
+            {!search && statusFilter === "All Status" && typeFilter === "All Types" && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="btn-primary"
+                style={btnStyle}
+              >
+                + Create Case
+              </button>
+            )}
+          </div>
+        )}
+
       </div>
-
-      {/* Case Timeline */}
-      <CaseTimeline caseId={id} />
-
-      {/* Hearing Section */}
-      <AddHearing caseId={id} />
-      <HearingList caseId={id} />
     </div>
   );
 }
 
-export default CaseDetail;
+export default Cases;

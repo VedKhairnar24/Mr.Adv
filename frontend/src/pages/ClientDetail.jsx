@@ -3,6 +3,42 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import API from "../services/api";
 
+function BackArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19 12H5M12 19l-7-7 7-7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 20h9" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h18" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8 6V4h8v2" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="6" y="6" width="12" height="14" rx="2" strokeWidth="1.8" />
+      <path d="M10 10v6M14 10v6" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 7h5l2 2h11v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -90,15 +126,24 @@ export default function ClientDetail() {
     }
   };
 
-  const statusColors = {
-    Active: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    Pending: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
-    Closed: "text-slate-400 border-slate-500/30 bg-slate-500/10",
-    "On Hold": "text-orange-400 border-orange-500/30 bg-orange-500/10",
-    Disposed: "text-red-400 border-red-500/30 bg-red-500/10",
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   };
 
-  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+  const getValue = (value) => (value && String(value).trim() ? value : <span className="detail-empty">—</span>);
+
+  const getStatusClass = (status = "") => {
+    const normalized = status.toLowerCase();
+    if (normalized === "active") return "completed";
+    if (normalized === "pending" || normalized === "on hold" || normalized === "adjourned") return "adjourned";
+    if (normalized === "closed" || normalized === "disposed" || normalized === "cancelled") return "disposed";
+    return "scheduled";
+  };
+
+  const initials = (client?.name || "C").trim().charAt(0).toUpperCase();
 
   if (loading) {
     return (
@@ -115,144 +160,241 @@ export default function ClientDetail() {
     return (
       <div className="text-center py-20">
         <p className="text-slate-400 mb-4">Client not found.</p>
-        <Link to="/clients" className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider">
-          ← BACK TO CLIENTS
+        <Link to="/clients" className="detail-btn-ghost" style={{ textDecoration: "none" }}>
+          <BackArrowIcon /> Back to Clients
         </Link>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <Link to="/clients" className="text-gold hover:text-gold/80 text-xs font-bold tracking-wider mb-3 inline-block">
-            ← BACK TO CLIENTS
+    <div className="detail-page-shell">
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <Link to="/clients" className="back-nav-link">
+            <BackArrowIcon />
+            Back to Clients
           </Link>
-          <h1 className="text-2xl font-extrabold text-white tracking-wide">Client Details</h1>
+          <h1 className="app-header-title">Client Details</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="detail-header-actions">
           {!editing && (
             <>
-              <button onClick={() => setEditing(true)}
-                className="bg-gold hover:bg-gold/85 text-primary px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-                EDIT
+              <button onClick={() => setEditing(true)} className="detail-btn-ghost" type="button">
+                <PencilIcon /> Edit
               </button>
-              <button onClick={handleDelete}
-                className="text-red-400 border border-red-500/30 hover:bg-red-500/10 px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-                DELETE
+              <button onClick={handleDelete} className="detail-btn-danger" type="button">
+                <TrashIcon /> Delete
               </button>
             </>
           )}
-        </div>
-      </div>
-
-      {/* Edit Form */}
-      {editing ? (
-        <div className="bg-card rounded-lg border border-gold/10 p-6">
-          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">EDIT CLIENT</h2>
-          <form onSubmit={handleUpdate}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NAME *</label>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} className={inputClass} required />
-              </div>
-              <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">PHONE *</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={inputClass} required />
-              </div>
-              <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">EMAIL</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">ADDRESS</label>
-                <input type="text" name="address" value={formData.address} onChange={handleInputChange} className={inputClass} />
-              </div>
-            </div>
-            <div className="mt-6 flex gap-2">
-              <button type="submit"
-                className="bg-gold hover:bg-gold/85 text-primary px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-                SAVE CHANGES
-              </button>
-              <button type="button"
-                onClick={() => { setEditing(false); setFormData({ name: client.name || "", phone: client.phone || "", email: client.email || "", address: client.address || "" }); }}
-                className="border border-slate-600 text-slate-400 hover:border-slate-400 px-6 py-2 rounded font-bold text-sm tracking-wider transition-colors">
-                CANCEL
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        /* Client Details View */
-        <div className="bg-card rounded-lg border border-gold/10 p-6">
-          <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CLIENT INFORMATION</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CLIENT ID</p>
-              <p className="font-semibold text-white text-sm">{client.id}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">NAME</p>
-              <p className="font-semibold text-white text-sm">{client.name}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">PHONE</p>
-              <p className="font-semibold text-white text-sm">{client.phone || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">EMAIL</p>
-              <p className="font-semibold text-white text-sm">{client.email || "N/A"}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">ADDRESS</p>
-              <p className="font-semibold text-white text-sm">{client.address || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 mb-1">CREATED</p>
-              <p className="font-semibold text-white text-sm">{client.created_at ? new Date(client.created_at).toLocaleDateString() : "N/A"}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Client Cases Section */}
-      {!editing && (
-        <div className="mt-8">
-          <h2 className="text-sm font-bold mb-4 text-white tracking-wide">CLIENT CASES</h2>
-          {cases.length === 0 ? (
-            <div className="bg-card rounded-lg border border-gold/10 p-8 text-center">
-              <p className="text-slate-500 text-sm">No cases found for this client.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {cases.map((c) => (
-                <div key={c.id} className="bg-card border border-gold/10 rounded-lg p-4 hover:border-gold/25 transition-colors flex justify-between items-center">
-                  <div>
-                    <p className="font-bold text-white text-sm">{c.case_title}</p>
-                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                      <span className="text-[10px] text-slate-500">
-                        Case No: {c.case_number || "N/A"}
-                      </span>
-                      <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded border ${statusColors[c.status] || "text-blue-400 border-blue-500/30 bg-blue-500/10"}`}>
-                        {c.status}
-                      </span>
-                      {c.court_name && (
-                        <span className="text-[10px] text-slate-500">Court: {c.court_name}</span>
-                      )}
-                    </div>
-                  </div>
-                  <Link to={`/cases/${c.id}`}
-                    className="text-gold text-xs font-bold tracking-wider px-4 py-2 border border-gold/30 rounded hover:bg-gold/10 transition-colors">
-                    VIEW
-                  </Link>
-                </div>
-              ))}
-            </div>
+          {editing && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setFormData({
+                  name: client.name || "",
+                  phone: client.phone || "",
+                  email: client.email || "",
+                  address: client.address || "",
+                });
+              }}
+              className="detail-btn-ghost"
+            >
+              Cancel Edit
+            </button>
           )}
         </div>
-      )}
+      </header>
+
+      <div className="detail-content">
+        {editing ? (
+          <section className="detail-card with-corners" style={{ padding: "28px 32px", marginBottom: "24px" }}>
+            <div className="detail-card-label">Edit Client</div>
+            <form onSubmit={handleUpdate}>
+              <div className="detail-info-grid">
+                <div className="detail-field">
+                  <label className="detail-field-label">Name *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="detail-input" required />
+                </div>
+                <div className="detail-field">
+                  <label className="detail-field-label">Phone *</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="detail-input" required />
+                </div>
+                <div className="detail-field">
+                  <label className="detail-field-label">Email</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="detail-input" />
+                </div>
+                <div className="detail-field">
+                  <label className="detail-field-label">Address</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="detail-input" />
+                </div>
+              </div>
+              <div className="detail-header-actions" style={{ marginTop: "20px" }}>
+                <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </section>
+        ) : (
+          <>
+            <section className="detail-card with-corners" style={{ gridColumn: "1 / -1", padding: "28px 32px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "20px",
+                  marginBottom: "28px",
+                  paddingBottom: "20px",
+                  borderBottom: "1px solid var(--border-2)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "9999px",
+                    background: "var(--gold)",
+                    border: "2px solid var(--gold2)",
+                    color: "var(--bg)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "Cormorant Garamond, serif",
+                    fontSize: "28px",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {initials}
+                </div>
+                <div>
+                  <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "28px", fontWeight: 700, marginBottom: "4px" }}>{client.name}</h2>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "var(--gold-dim)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "2px",
+                      padding: "3px 10px",
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: "11px",
+                      color: "var(--gold)",
+                    }}
+                  >
+                    ID: {client.id}
+                  </span>
+                </div>
+              </div>
+
+              <div className="detail-info-grid">
+                <div className="detail-field">
+                  <span className="detail-field-label">Name</span>
+                  <span className="detail-field-value">{getValue(client.name)}</span>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-field-label">Phone</span>
+                  <span className="detail-field-value">{getValue(client.phone)}</span>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-field-label">Email</span>
+                  <span className="detail-field-value">{getValue(client.email)}</span>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-field-label">Address</span>
+                  <span className="detail-field-value">{getValue(client.address)}</span>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-field-label">Created</span>
+                  <span className="detail-field-value">{formatDate(client.created_at)}</span>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ marginTop: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "20px", fontWeight: 600 }}>Associated Cases</h3>
+                <Link to="/cases" className="btn-primary" style={{ minHeight: "34px", height: "34px", padding: "0 14px", fontSize: "10px" }}>
+                  + New Case
+                </Link>
+              </div>
+
+              <div className="detail-card" style={{ padding: 0, overflow: "hidden" }}>
+                {cases.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "48px 24px",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "9999px",
+                        background: "var(--gold-dim)",
+                        border: "1px solid var(--border)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--gold)",
+                      }}
+                    >
+                      <FolderIcon />
+                    </div>
+                    <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "18px", fontWeight: 600 }}>No cases found</p>
+                    <p style={{ color: "var(--muted)", fontSize: "12px" }}>No cases have been linked to this client yet.</p>
+                    <Link to="/cases" className="btn-primary" style={{ minHeight: "34px", height: "34px", padding: "0 14px", fontSize: "10px" }}>
+                      Create First Case
+                    </Link>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="table" style={{ tableLayout: "auto" }}>
+                      <thead>
+                        <tr>
+                          <th>Case Title</th>
+                          <th>Case #</th>
+                          <th>Court</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cases.map((caseItem) => (
+                          <tr key={caseItem.id}>
+                            <td>{caseItem.case_title || <span className="detail-empty">—</span>}</td>
+                            <td>
+                              <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--muted)" }}>
+                                {caseItem.case_number || "—"}
+                              </span>
+                            </td>
+                            <td>{caseItem.court_name || <span className="detail-empty">—</span>}</td>
+                            <td>
+                              <span className={`detail-status-badge ${getStatusClass(caseItem.status)}`}>{caseItem.status || "Pending"}</span>
+                            </td>
+                            <td>
+                              <Link to={`/cases/${caseItem.id}`} className="detail-btn-ghost" style={{ textDecoration: "none", height: "34px" }}>
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -79,7 +79,7 @@ function LogoutIcon() {
   );
 }
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const advocate = JSON.parse(localStorage.getItem("advocate") || "{}");
@@ -109,7 +109,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const avatarInitial = (displayName?.charAt(0) || "V").toUpperCase();
 
   return (
-    <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
+    <aside className={`sidebar ${collapsed ? "is-collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
       <div className="sidebar-header">
         <Link to="/dashboard" className="sidebar-brand">
           <span className="sidebar-logo-box" aria-hidden="true">

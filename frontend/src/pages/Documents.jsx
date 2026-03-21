@@ -200,26 +200,14 @@ function Documents() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <header
-        style={{
-          padding: "28px 40px 20px",
-          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
-          background: "rgba(10, 18, 16, 0.5)",
-          backdropFilter: "blur(10px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-        }}
-      >
-        <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "32px", fontWeight: 700, lineHeight: 1 }}>
-          Document Management
-        </h1>
-        <p style={{ marginTop: "4px", fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)" }}>
-          Upload and manage case documents
-        </p>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Document Management</h1>
+          <p className="app-header-subtitle">Upload and manage case documents</p>
+        </div>
       </header>
 
-      <div style={{ padding: "32px 40px" }}>
+      <div className="app-body">
         {(error || success) && (
           <div style={{ marginBottom: "16px" }}>
             {error && <div className="badge badge-cancelled" style={{ fontSize: "10px" }}>{error}</div>}
@@ -227,8 +215,8 @@ function Documents() {
           </div>
         )}
 
-        <div className="documents-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: "24px" }}>
-          <section className="card" style={{ borderRadius: "3px", padding: "24px", display: "flex", flexDirection: "column" }}>
+        <div className="documents-grid" style={{ display: "grid", gap: "24px" }}>
+          <section className="card" style={{ borderRadius: "4px", minHeight: "480px", padding: "24px", display: "flex", flexDirection: "column" }}>
             <p className="label text-gold" style={{ letterSpacing: "3px", marginBottom: "16px" }}>Upload Document</p>
 
             <form onSubmit={uploadDocument} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -244,7 +232,8 @@ function Documents() {
                     border: "1px solid var(--border)",
                     borderRadius: "3px",
                     color: "var(--white)",
-                    padding: "10px 12px",
+                    height: "48px",
+                    padding: "0 40px 0 14px",
                     fontFamily: "Rajdhani, sans-serif",
                     fontSize: "13px",
                   }}
@@ -275,7 +264,8 @@ function Documents() {
                   style={{
                     border: "1.5px dashed rgba(200,168,75,0.3)",
                     borderRadius: "3px",
-                    padding: "36px",
+                    minHeight: "200px",
+                    padding: "40px",
                     textAlign: "center",
                     cursor: "pointer",
                     transition: "all 0.25s ease",
@@ -293,10 +283,10 @@ function Documents() {
                 >
                   <div
                     style={{
-                      width: "52px",
-                      height: "52px",
+                      width: "60px",
+                      height: "60px",
                       borderRadius: "50%",
-                      margin: "0 auto 14px",
+                      margin: "0 auto 16px",
                       background: "var(--gold-dim)",
                       border: "1px solid rgba(200,168,75,0.35)",
                       display: "flex",
@@ -305,13 +295,13 @@ function Documents() {
                       color: "var(--gold)",
                     }}
                   >
-                    <span style={{ width: "22px", height: "22px" }}><UploadIcon /></span>
+                      <span style={{ width: "24px", height: "24px" }}><UploadIcon /></span>
                   </div>
 
-                  <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "17px", color: "var(--white)" }}>
+                  <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "18px", color: "var(--white)" }}>
                     <span style={{ color: "var(--gold)" }}>Click to upload</span> or drag & drop
                   </p>
-                  <p style={{ marginTop: "8px", marginBottom: "14px", fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)" }}>
+                  <p style={{ marginTop: "8px", marginBottom: "16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
                     PDF, DOC, DOCX (Max 10MB)
                   </p>
 
@@ -329,7 +319,8 @@ function Documents() {
                           fontWeight: 700,
                           letterSpacing: "1.5px",
                           textTransform: "uppercase",
-                          padding: "4px 10px",
+                          height: "28px",
+                          padding: "0 12px",
                           borderRadius: "2px",
                           border: "1px solid var(--border)",
                           color: "var(--muted)",
@@ -354,7 +345,7 @@ function Documents() {
             </form>
           </section>
 
-          <section className="card" style={{ borderRadius: "3px", padding: "24px" }}>
+          <section className="card" style={{ borderRadius: "4px", minHeight: "480px", padding: "24px" }}>
             <div className="flex-between" style={{ marginBottom: "16px" }}>
               <p className="label text-gold" style={{ letterSpacing: "3px" }}>Documents For This Case</p>
               <p className="label text-muted" style={{ letterSpacing: "3px" }}>{documents.length} Documents</p>
@@ -383,10 +374,11 @@ function Documents() {
                         background: "var(--surface)",
                         border: "1px solid var(--border)",
                         borderLeft: "3px solid transparent",
-                        padding: "14px 16px",
+                        minHeight: "64px",
+                        padding: "14px 18px",
                         display: "flex",
                         alignItems: "center",
-                        gap: "14px",
+                        gap: "16px",
                         transition: "all 0.2s ease",
                       }}
                       onMouseEnter={(e) => {
@@ -398,12 +390,12 @@ function Documents() {
                         e.currentTarget.style.background = "var(--surface)";
                       }}
                     >
-                      <div style={{ width: "38px", height: "38px", borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", background: theme.bg, border: `1px solid ${theme.border}`, color: theme.color }}>
+                      <div style={{ width: "42px", height: "42px", borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "center", background: theme.bg, border: `1px solid ${theme.border}`, color: theme.color, flexShrink: 0 }}>
                         <span style={{ width: "18px", height: "18px" }}><FileIcon /></span>
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "13px", fontWeight: 600, color: "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "4px" }}>
                           {doc.document_name}
                         </p>
                         <p style={{ marginTop: "2px", fontFamily: "Rajdhani, sans-serif", fontSize: "11px", color: "var(--muted)" }}>
@@ -411,14 +403,14 @@ function Documents() {
                         </p>
                       </div>
 
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
                         <a href={`http://localhost:5000${doc.file_path}`} target="_blank" rel="noopener noreferrer" className="btn-icon" title="View document">
                           <EyeIcon />
                         </a>
                         <a href={`http://localhost:5000${doc.file_path}`} download className="btn-icon" title="Download document">
                           <DownloadIcon />
                         </a>
-                        <button className="btn-danger" style={{ padding: "8px" }} title="Delete document" onClick={() => deleteDocument(doc.id)}>
+                        <button className="btn-danger" style={{ width: "34px", height: "34px", minHeight: "34px", padding: 0, justifyContent: "center" }} title="Delete document" onClick={() => deleteDocument(doc.id)}>
                           <span style={{ width: "16px", height: "16px", display: "inline-flex" }}><TrashIcon /></span>
                         </button>
                       </div>

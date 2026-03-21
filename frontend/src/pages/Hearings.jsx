@@ -170,43 +170,10 @@ export default function Hearings() {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* SECTION A: HEADER BAR */}
-      <header
-        style={{
-          padding: "28px 40px 20px",
-          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
-          background: "rgba(10, 18, 16, 0.5)",
-          backdropFilter: "blur(10px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontFamily: "Cormorant Garamond, serif",
-              fontSize: "32px",
-              fontWeight: 700,
-              lineHeight: 1,
-              color: "var(--white)",
-            }}
-          >
-            Hearings
-          </h1>
-          <p
-            style={{
-              marginTop: "4px",
-              fontFamily: "Rajdhani, sans-serif",
-              fontSize: "12px",
-              fontWeight: 500,
-              color: "var(--muted)",
-            }}
-          >
-            Track all court dates and hearing schedules
-          </p>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Hearings</h1>
+          <p className="app-header-subtitle">Track all court dates and hearing schedules</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -216,7 +183,7 @@ export default function Hearings() {
         </button>
       </header>
 
-      <div style={{ padding: "32px 40px" }}>
+      <div className="app-body">
       {/* SECTION B: WEEK STRIP CALENDAR */}
       <section
         style={{
@@ -238,10 +205,12 @@ export default function Hearings() {
               key={slot.iso}
               style={{
                 flex: 1,
+                minWidth: "56px",
+                height: "72px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                padding: "10px 6px",
+                padding: "10px 8px",
                 borderRadius: "3px",
                 border: isToday ? "1px solid rgba(200, 168, 75, 0.3)" : "1px solid transparent",
                 background: isToday ? "var(--gold-dim)" : "transparent",
@@ -272,7 +241,7 @@ export default function Hearings() {
               <span
                 style={{
                   fontFamily: "Cormorant Garamond, serif",
-                  fontSize: "20px",
+                  fontSize: "22px",
                   fontWeight: 700,
                   color: isToday ? "var(--gold)" : "var(--white)",
                   lineHeight: 1,
@@ -288,7 +257,7 @@ export default function Hearings() {
                     height: "4px",
                     borderRadius: "50%",
                     background: "var(--gold)",
-                    bottom: "6px",
+                    bottom: "8px",
                   }}
                 ></span>
               )}
@@ -298,20 +267,9 @@ export default function Hearings() {
       </section>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
         <div style={{ flex: 1, position: "relative" }}>
-          <span
-            style={{
-              position: "absolute",
-              left: "14px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              width: "16px",
-              height: "16px",
-              color: "var(--muted)",
-              pointerEvents: "none",
-            }}
-          >
+          <span className="search-icon">
             <SearchIcon />
           </span>
           <input
@@ -319,6 +277,7 @@ export default function Hearings() {
             placeholder="Search case, court, judge..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
             style={{
               width: "100%",
               background: "var(--surface)",
@@ -326,8 +285,6 @@ export default function Hearings() {
               borderRadius: "3px",
               color: "var(--white)",
               fontFamily: "Rajdhani, sans-serif",
-              fontSize: "14px",
-              padding: "12px 16px 12px 44px",
             }}
           />
         </div>
@@ -343,7 +300,8 @@ export default function Hearings() {
             fontFamily: "Rajdhani, sans-serif",
             fontSize: "13px",
             fontWeight: 500,
-            padding: "10px 14px",
+            height: "48px",
+            padding: "0 14px",
             minWidth: "180px",
           }}
         />
@@ -361,7 +319,7 @@ export default function Hearings() {
       ) : (
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
           <div className="overflow-x-auto">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="hearings-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
                   {[
@@ -377,7 +335,8 @@ export default function Hearings() {
                       key={head}
                       style={{
                         textAlign: "left",
-                        padding: "14px 16px",
+                        padding: "0 16px",
+                        height: "44px",
                         fontFamily: "Rajdhani, sans-serif",
                         fontSize: "10px",
                         fontWeight: 700,
@@ -413,48 +372,48 @@ export default function Hearings() {
                       e.currentTarget.style.borderLeftColor = "transparent";
                     }}
                   >
-                    <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
-                      <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "22px", fontWeight: 700, lineHeight: 1, color: "var(--white)" }}>
+                    <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
+                      <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "26px", fontWeight: 700, lineHeight: 1, color: "var(--white)" }}>
                         {day}
                       </p>
-                      <p style={{ marginTop: "2px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>
+                      <p style={{ marginTop: "4px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>
                         {month} · {time}
                       </p>
                     </td>
 
-                    <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                    <td style={{ padding: "0 16px", height: "60px", verticalAlign: "middle" }}>
                       <Link to={`/cases/${h.case_id}`} style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "14px", fontWeight: 600, color: "var(--white)", textDecoration: "none" }}>
                         {h.case_title}
                       </Link>
                       {h.case_number && <p style={{ marginTop: "2px", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--gold)" }}>{h.case_number}</p>}
                     </td>
 
-                    <td style={{ padding: "14px 16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
+                    <td style={{ padding: "0 16px", height: "60px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
                       {h.court_name || h.court_hall || "—"}
                     </td>
-                    <td style={{ padding: "14px 16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
+                    <td style={{ padding: "0 16px", height: "60px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
                       {h.judge_name || "—"}
                     </td>
-                    <td style={{ padding: "14px 16px" }}>
+                    <td style={{ padding: "0 16px", height: "60px" }}>
                       <span className={`badge ${stageBadgeClass(h.stage)}`}>{h.stage || "Other"}</span>
                     </td>
-                    <td style={{ padding: "14px 16px" }}>
+                    <td style={{ padding: "0 16px", height: "60px" }}>
                       <span className={`badge ${statusBadgeClass(h.status)}`}>
                         {h.status?.toUpperCase()}
                       </span>
                     </td>
 
-                    <td style={{ padding: "14px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <td style={{ padding: "0 16px", height: "60px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", height: "60px" }}>
                         <Link
                           to={`/hearings/${h.id}`}
                           className="btn-ghost"
-                          style={{ padding: "5px 12px", fontSize: "11px", color: "var(--gold)", borderColor: "rgba(200,168,75,0.35)", gap: "6px" }}
+                          style={{ height: "34px", minHeight: "34px", padding: "0 14px", fontSize: "10px", color: "var(--gold)", borderColor: "rgba(200,168,75,0.35)", gap: "6px" }}
                         >
                           <span style={{ width: "13px", height: "13px" }}><EyeIcon /></span>
                           View
                         </Link>
-                        <button onClick={() => deleteHearing(h.id)} className="btn-danger" style={{ padding: "10px" }} title="Delete hearing">
+                        <button onClick={() => deleteHearing(h.id)} className="btn-danger" style={{ width: "34px", height: "34px", minHeight: "34px", padding: 0, justifyContent: "center" }} title="Delete hearing">
                           <span style={{ width: "14px", height: "14px" }}><TrashIcon /></span>
                         </button>
                       </div>
@@ -471,12 +430,12 @@ export default function Hearings() {
       {/* Add Hearing Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-gold/10 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gold/10 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Add Hearing</h2>
+          <div className="bg-card border border-gold/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-8 border-b border-gold/10 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white tracking-wide">Add Hearing</h2>
               <button onClick={() => setShowModal(false)} className="text-white/50 hover:text-white text-xl">✕</button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div>
                 <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">CASE *</label>
                 <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })}
@@ -487,7 +446,7 @@ export default function Hearings() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">HEARING DATE *</label>
                   <input type="date" value={form.hearing_date} onChange={(e) => setForm({ ...form, hearing_date: e.target.value })}
@@ -521,7 +480,7 @@ export default function Hearings() {
               <div>
                 <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">NOTES</label>
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Brief note about the hearing..." rows="3" className={inputClass} />
+                  placeholder="Brief note about the hearing..." rows="4" className={inputClass} style={{ minHeight: "120px", paddingTop: "12px", paddingBottom: "12px" }} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">NEXT HEARING DATE</label>
@@ -530,13 +489,15 @@ export default function Hearings() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={submitting}
-                  className={`px-5 py-2.5 rounded font-bold text-sm tracking-wider transition-colors ${
+                  className={`px-5 rounded font-bold text-sm tracking-wider transition-colors ${
                     submitting ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
-                  }`}>
+                  }`}
+                  style={{ height: "44px", minHeight: "44px" }}>
                   {submitting ? "ADDING..." : "ADD HEARING"}
                 </button>
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 rounded font-bold text-sm tracking-wider border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors">
+                  className="px-5 rounded font-bold text-sm tracking-wider border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
+                  style={{ height: "44px", minHeight: "44px" }}>
                   CANCEL
                 </button>
               </div>

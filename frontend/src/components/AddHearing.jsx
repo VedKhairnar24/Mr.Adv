@@ -13,8 +13,6 @@ export default function AddHearing({ caseId }) {
   const [adding, setAdding] = useState(false);
 
   const stageOptions = ["Filing", "Evidence", "Argument", "Judgment", "Cross-Examination", "Mediation", "Other"];
-  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
-
   const addHearing = async (e) => {
     e.preventDefault();
     if (!date || !court) {
@@ -44,58 +42,74 @@ export default function AddHearing({ caseId }) {
   };
 
   return (
-    <form onSubmit={addHearing} className="bg-card border border-gold/10 p-5 rounded-lg mt-6">
-      <h2 className="text-sm font-bold mb-4 text-white tracking-wide">ADD HEARING</h2>
+    <form onSubmit={addHearing} className="detail-card" style={{ padding: "24px" }}>
+      <div className="detail-card-label">Add Hearing</div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">HEARING DATE *</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} required />
+      <div style={{ display: "grid", gap: "16px" }}>
+        <div className="detail-field">
+          <label className="detail-field-label">Hearing Date *</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="detail-input" required />
         </div>
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">TIME</label>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputClass} />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">COURT NAME *</label>
-          <input type="text" value={court} onChange={(e) => setCourt(e.target.value)}
-            placeholder="e.g., District Court" className={inputClass} required />
+        <div className="detail-field">
+          <label className="detail-field-label">Time</label>
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="detail-input" />
         </div>
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">JUDGE NAME</label>
-          <input type="text" value={judge} onChange={(e) => setJudge(e.target.value)}
-            placeholder="e.g., Justice Sharma" className={inputClass} />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">STAGE</label>
-          <select value={stage} onChange={(e) => setStage(e.target.value)} className={inputClass}>
+        <div className="detail-field">
+          <label className="detail-field-label">Court Name *</label>
+          <input
+            type="text"
+            value={court}
+            onChange={(e) => setCourt(e.target.value)}
+            placeholder="e.g., District Court"
+            className="detail-input"
+            required
+          />
+        </div>
+
+        <div className="detail-field">
+          <label className="detail-field-label">Judge Name</label>
+          <input
+            type="text"
+            value={judge}
+            onChange={(e) => setJudge(e.target.value)}
+            placeholder="e.g., Justice Sharma"
+            className="detail-input"
+          />
+        </div>
+
+        <div className="detail-field">
+          <label className="detail-field-label">Stage</label>
+          <select value={stage} onChange={(e) => setStage(e.target.value)} className="detail-select">
             <option value="">Select Stage</option>
             {stageOptions.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div>
-          <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NEXT HEARING DATE</label>
-          <input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} className={inputClass} />
+
+        <div className="detail-field">
+          <label className="detail-field-label">Next Hearing Date</label>
+          <input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} className="detail-input" />
+        </div>
+
+        <div className="detail-field">
+          <label className="detail-field-label">Notes</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Brief note about the hearing..."
+            className="detail-textarea"
+          />
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">NOTES</label>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="Brief note about the hearing..." rows="3" className={inputClass} />
-      </div>
-
-      <button type="submit" disabled={adding}
-        className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-colors ${
-          adding ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
-        }`}>
-        {adding ? "ADDING..." : "ADD HEARING"}
+      <button
+        type="submit"
+        disabled={adding}
+        className={`btn-primary ${adding ? "opacity-60 cursor-not-allowed" : ""}`}
+        style={{ width: "100%", marginTop: "14px", height: "44px", minHeight: "44px" }}
+      >
+        {adding ? "Adding..." : "Add Hearing"}
       </button>
     </form>
   );

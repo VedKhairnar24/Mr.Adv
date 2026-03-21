@@ -114,54 +114,21 @@ export default function Dashboard() {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* SECTION A: TOP HEADER BAR */}
-      <header
-        style={{
-          padding: "28px 40px 20px",
-          borderBottom: "1px solid rgba(180, 150, 80, 0.08)",
-          background: "rgba(10, 18, 16, 0.5)",
-          backdropFilter: "blur(10px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontFamily: "Cormorant Garamond, serif",
-              fontSize: "32px",
-              fontWeight: 700,
-              lineHeight: 1,
-              color: "var(--white)",
-            }}
-          >
-            Dashboard
-          </h1>
-          <p
-            style={{
-              marginTop: "4px",
-              fontFamily: "Rajdhani, sans-serif",
-              fontSize: "12px",
-              fontWeight: 500,
-              color: "var(--muted)",
-            }}
-          >
-            {formattedDate}
-          </p>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Dashboard</h1>
+          <p className="app-header-subtitle">{formattedDate}</p>
         </div>
       </header>
 
       {/* SECTION B/C/D: MAIN BODY */}
-      <div style={{ padding: "32px 40px" }}>
+      <div className="app-body">
         {/* SECTION B: GREETING */}
         <p
           style={{
             marginBottom: "28px",
             fontFamily: "Cormorant Garamond, serif",
-            fontSize: "14px",
+            fontSize: "15px",
             fontStyle: "italic",
             color: "var(--muted)",
           }}
@@ -175,7 +142,7 @@ export default function Dashboard() {
             display: "grid",
             gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             gap: "16px",
-            marginBottom: "36px",
+            marginBottom: "40px",
           }}
         >
           {stats.map((item) => {
@@ -188,6 +155,7 @@ export default function Dashboard() {
                   border: "1px solid var(--border)",
                   borderRadius: "3px",
                   padding: "24px",
+                  minHeight: "140px",
                   overflow: "hidden",
                   position: "relative",
                   transition: "transform 0.2s ease, border-color 0.2s ease",
@@ -215,12 +183,12 @@ export default function Dashboard() {
 
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
+                    width: "40px",
+                    height: "40px",
                     borderRadius: "3px",
                     background: "var(--gold-dim)",
                     border: "1px solid var(--border)",
-                    marginBottom: "14px",
+                    marginBottom: "16px",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -229,8 +197,8 @@ export default function Dashboard() {
                 >
                   <span
                     style={{
-                      width: "16px",
-                      height: "16px",
+                      width: "18px",
+                      height: "18px",
                       display: "inline-flex",
                     }}
                   >
@@ -241,10 +209,10 @@ export default function Dashboard() {
                 <div
                   style={{
                     fontFamily: "Cormorant Garamond, serif",
-                    fontSize: "44px",
+                    fontSize: "52px",
                     fontWeight: 700,
                     lineHeight: 1,
-                    letterSpacing: "-1px",
+                    letterSpacing: "-2px",
                     color: "var(--white)",
                   }}
                 >
@@ -308,18 +276,18 @@ export default function Dashboard() {
 
             <div className="card" style={{ padding: "24px", borderRadius: "3px" }}>
               {hearings.length === 0 ? (
-                <div className="empty-state" style={{ minHeight: "220px", padding: "24px" }}>
+                <div className="empty-state" style={{ minHeight: "220px" }}>
                   <div
                     style={{
-                      width: "48px",
-                      height: "48px",
+                      width: "56px",
+                      height: "56px",
                       borderRadius: "50%",
                       background: "var(--gold-dim)",
                       border: "1px solid var(--border)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      marginBottom: "14px",
+                      marginBottom: "16px",
                       color: "var(--gold)",
                     }}
                   >
@@ -353,11 +321,11 @@ export default function Dashboard() {
                         textDecoration: "none",
                       }}
                     >
-                      <div style={{ minWidth: "44px", textAlign: "center" }}>
+                      <div style={{ minWidth: "52px", textAlign: "center" }}>
                         <div
                           style={{
                             fontFamily: "Cormorant Garamond, serif",
-                            fontSize: "26px",
+                            fontSize: "28px",
                             lineHeight: 1,
                             fontWeight: 700,
                             color: "var(--gold)",
@@ -482,7 +450,7 @@ export default function Dashboard() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: "12px",
-                      padding: "12px 0",
+                        padding: "14px 0",
                       borderBottom: index !== recentCases.length - 1 ? "1px solid var(--border)" : "none",
                       textDecoration: "none",
                     }}

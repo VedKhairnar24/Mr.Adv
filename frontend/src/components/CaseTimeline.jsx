@@ -117,8 +117,8 @@ function CaseTimeline({ caseId }) {
 
   if (loading) {
     return (
-      <div className="bg-card p-6 rounded-lg border border-gold/10 mt-6">
-        <h2 className="text-sm font-bold mb-4 text-white tracking-wide">CASE TIMELINE</h2>
+      <div className="detail-card">
+        <div className="detail-card-label">Case Timeline</div>
         <div className="flex justify-center py-8">
           <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gold border-t-transparent"></div>
         </div>
@@ -127,8 +127,8 @@ function CaseTimeline({ caseId }) {
   }
 
   return (
-    <div className="bg-card p-6 rounded-lg border border-gold/10 mt-6">
-      <h2 className="text-sm font-bold mb-5 text-white tracking-wide">CASE TIMELINE</h2>
+    <div className="detail-card">
+      <div className="detail-card-label">Case Timeline</div>
 
       {events.length === 0 ? (
         <p className="text-slate-500 text-center py-8 text-sm">
@@ -137,13 +137,16 @@ function CaseTimeline({ caseId }) {
       ) : (
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-gold/20"></div>
+          <div
+            className="absolute left-4 top-0 bottom-0 w-px"
+            style={{ background: "linear-gradient(to bottom, transparent, var(--gold) 12%, var(--gold) 88%, transparent)" }}
+          />
 
           <div className="space-y-5">
             {events.map((event) => (
               <div key={event.id} className="relative flex items-start pl-10">
                 {/* Icon circle */}
-                <div className={`absolute left-1.5 w-6 h-6 rounded-full border flex items-center justify-center ${getIconColor(event.type)}`}>
+                <div className="absolute left-1.5 w-6 h-6 rounded-full border flex items-center justify-center bg-bg2 border-gold/60 text-gold">
                   {getIcon(event.type)}
                 </div>
 
@@ -159,12 +162,14 @@ function CaseTimeline({ caseId }) {
                   <p className="text-xs text-slate-400">{event.description}</p>
 
                   {event.type === "hearing" && event.status && (
-                    <span className={`inline-block mt-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded border ${
+                    <span className={`inline-block mt-2 detail-status-badge ${
                       event.status === "Completed"
-                        ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                        ? "completed"
                         : event.status === "Adjourned"
-                        ? "text-orange-400 border-orange-500/30 bg-orange-500/10"
-                        : "text-blue-400 border-blue-500/30 bg-blue-500/10"
+                        ? "adjourned"
+                        : event.status === "Cancelled"
+                        ? "cancelled"
+                        : "scheduled"
                     }`}>
                       {event.status}
                     </span>

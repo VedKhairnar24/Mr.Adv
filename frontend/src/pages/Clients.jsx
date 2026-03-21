@@ -145,43 +145,10 @@ function Clients() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* SECTION A: HEADER BAR */}
-      <header
-        style={{
-          padding: '28px 40px 20px',
-          borderBottom: '1px solid rgba(180, 150, 80, 0.08)',
-          background: 'rgba(10, 18, 16, 0.5)',
-          backdropFilter: 'blur(10px)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start'
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '32px',
-              fontWeight: 700,
-              lineHeight: 1,
-              color: 'var(--white)'
-            }}
-          >
-            Clients
-          </h1>
-          <p
-            style={{
-              marginTop: '4px',
-              fontFamily: 'Rajdhani, sans-serif',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: 'var(--muted)'
-            }}
-          >
-            Manage your clients ({clients.length})
-          </p>
+      <header className="app-header">
+        <div className="app-header-title-wrap">
+          <h1 className="app-header-title">Clients</h1>
+          <p className="app-header-subtitle">Manage your clients ({clients.length})</p>
         </div>
 
         <button
@@ -199,7 +166,7 @@ function Clients() {
         </button>
       </header>
 
-      <div style={{ padding: '32px 40px' }}>
+      <div className="app-body">
         {/* Add Client Form */}
         {showAddForm && (
           <div className="card" style={{ padding: '24px', borderRadius: '3px', marginBottom: '20px' }}>
@@ -235,18 +202,7 @@ function Clients() {
 
         {/* SECTION B: SEARCH BAR */}
         <div style={{ width: '100%', marginBottom: '20px', position: 'relative' }}>
-          <span
-            style={{
-              position: 'absolute',
-              left: '14px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '16px',
-              height: '16px',
-              color: 'var(--muted)',
-              pointerEvents: 'none'
-            }}
-          >
+          <span className="search-icon">
             <SearchIcon />
           </span>
           <input
@@ -254,15 +210,15 @@ function Clients() {
             placeholder="Search clients..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
             style={{
               width: '100%',
               background: 'var(--surface)',
-              border: '1px solid var(--border)',
+              border: 'var(--border-1)',
               borderRadius: '3px',
               color: 'var(--white)',
               fontFamily: 'Rajdhani, sans-serif',
               fontSize: '14px',
-              padding: '12px 16px 12px 44px',
               outline: 'none'
             }}
             onFocus={(e) => {
@@ -282,7 +238,7 @@ function Clients() {
             <p className="empty-text" style={{ fontSize: '12px' }}>Try a different search or add a new client.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {filteredClients.map((client) => (
               <article
                 key={client.id}
@@ -291,10 +247,11 @@ function Clients() {
                   border: '1px solid var(--border)',
                   borderLeft: '3px solid transparent',
                   borderRadius: '3px',
-                  padding: '18px 20px',
+                  minHeight: '80px',
+                  padding: '20px 24px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '16px',
+                  gap: '20px',
                   transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={(e) => {
@@ -308,18 +265,18 @@ function Clients() {
               >
                 <div
                   style={{
-                    width: '48px',
-                    height: '48px',
+                    width: '44px',
+                    height: '44px',
                     borderRadius: '50%',
                     background: 'var(--gold)',
-                    border: '1.5px solid var(--gold2)',
+                    border: '2px solid var(--gold)',
                     color: 'var(--bg)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                     fontFamily: 'Cormorant Garamond, serif',
-                    fontSize: '20px',
+                    fontSize: '18px',
                     fontWeight: 700
                   }}
                 >
@@ -333,13 +290,13 @@ function Clients() {
                       fontSize: '16px',
                       fontWeight: 600,
                       color: 'var(--white)',
-                      marginBottom: '5px'
+                      marginBottom: '8px'
                     }}
                   >
                     {client.name}
                   </h3>
 
-                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', rowGap: '4px' }}>
                     <span style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', color: 'var(--muted)' }}>
                       <span style={{ width: '13px', height: '13px' }}><PhoneIcon /></span>
                       <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '12px', fontWeight: 400 }}>{client.phone}</span>
@@ -361,15 +318,17 @@ function Clients() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   <Link
                     to={`/clients/${client.id}`}
                     className="btn-ghost"
                     style={{
                       borderColor: 'rgba(200, 168, 75, 0.35)',
                       color: 'var(--gold)',
-                      fontSize: '11px',
-                      padding: '8px 12px',
+                      fontSize: '10px',
+                      height: '34px',
+                      minHeight: '34px',
+                      padding: '0 14px',
                       gap: '6px'
                     }}
                   >
@@ -380,7 +339,7 @@ function Clients() {
                   <button
                     onClick={() => handleDeleteClient(client.id)}
                     className="btn-danger"
-                    style={{ padding: '10px' }}
+                    style={{ width: '34px', height: '34px', minHeight: '34px', padding: 0, justifyContent: 'center' }}
                     title="Delete client"
                   >
                     <span style={{ width: '14px', height: '14px' }}><TrashIcon /></span>
