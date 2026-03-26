@@ -280,7 +280,7 @@ function Clients() {
                     fontWeight: 700
                   }}
                 >
-                  {(client.name?.charAt(0) || 'C').toUpperCase()}
+                  {(client.name?.charAt(0) || 'C ').toUpperCase()}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -293,7 +293,7 @@ function Clients() {
                       marginBottom: '8px'
                     }}
                   >
-                    {client.name}
+                    {client.name} <span style={{ color: 'var(--gold)', fontSize: '12px', fontWeight: 500 }}>#{client.id}</span>
                   </h3>
 
                   <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', rowGap: '4px' }}>

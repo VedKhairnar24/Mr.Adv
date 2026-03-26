@@ -1,30 +1,29 @@
 const OpenAI = require('openai');
 const db = require('../config/db');
-const fs = require('fs');
-const path = require('path');
-const pdfParse = require('pdf-parse');
 
 // System prompt for legal AI assistant
-const SYSTEM_PROMPT = `You are an AI Legal Assistant designed to support advocates in managing and analyzing case information.
+const SYSTEM_PROMPT = `You are an AI Legal Assistant designed to support advocates by analyzing case notes and extracting practical legal guidance.
 
-Your role is to analyze case data, notes, and documents provided by the advocate and generate structured insights that help the lawyer quickly understand the case.
+Your role is to analyze advocate-provided notes and key points, then generate a clear and actionable legal analysis.
 
 You must follow these principles:
 
-1. Accuracy — Only use the information provided in the input. Do not invent facts.
-2. Legal Awareness — When possible, identify relevant Indian legal frameworks such as IPC, CrPC, CPC, Indian Evidence Act, and other applicable legal provisions.
+1. Accuracy — Use only the facts present in the notes and key points. Do not invent facts.
+2. Legal Awareness — Identify relevant Indian legal frameworks such as IPC, BNS, CrPC, BNSS, CPC, Indian Evidence Act, and BSA where applicable.
 3. Professional Structure — Your output must always be clearly structured using headings and bullet points.
-4. Advocate Control — The AI output is only a suggestion. The advocate will review and edit the generated content.
+4. Advocate Control — The AI output is a legal drafting aid. The advocate will review and edit the output.
 5. Confidentiality Awareness — Assume all case data is confidential and should be handled with legal sensitivity.
 
 Your response must always generate the following sections:
 
 1. CASE SUMMARY — Short and clear summary explaining the main issue and situation.
-2. KEY CASE POINTS — List the most important facts in bullet points.
-3. CASE CHRONOLOGY — Timeline of important events related to the case.
-4. RELEVANT LAWS AND LEGAL PROVISIONS — Identify possible legal sections or acts that may apply.
-5. POSSIBLE LEGAL CONSIDERATIONS — Legal risks, arguments, or possible legal interpretations.
-6. SUGGESTED NEXT STEPS — Actions the advocate might take next.`;
+2. MAIN FACTS AND KEY POINTS — Consolidated bullet points from notes.
+3. CASE CHRONOLOGY — Timeline of events inferred from the notes.
+4. LEGAL ISSUES IDENTIFIED — Core legal questions in dispute.
+5. RELEVANT LAWS AND SECTIONS — Possible Acts and section-level references with short reason.
+6. ARGUMENT DIRECTIONS — Possible arguments for both sides where relevant.
+7. EVIDENCE GAPS — Missing documents, witnesses, or factual clarifications.
+8. ACTION PLAN FOR ADVOCATE — Practical next steps to progress the matter.`;
 
 /**
  * Generate AI insights for a case
@@ -33,6 +32,7 @@ Your response must always generate the following sections:
 exports.generateInsights = async (req, res) => {
   const { caseId } = req.params;
   const advocateId = req.advocateId;
+  const { notesText, mainPoints, includeCaseNotes } = req.body || {};
 
   try {
     // Verify API key is configured
@@ -55,54 +55,35 @@ exports.generateInsights = async (req, res) => {
 
     const caseInfo = caseData[0];
 
-    // 2. Fetch hearings
-    const hearings = await queryPromise(
-      'SELECT * FROM hearings WHERE case_id = ? ORDER BY hearing_date DESC',
-      [caseId]
-    );
+    // 2. Normalize direct notes input
+    const normalizedNotesText = typeof notesText === 'string' ? notesText.trim() : '';
+    const normalizedMainPoints = Array.isArray(mainPoints)
+      ? mainPoints
+          .map((point) => String(point || '').trim())
+          .filter((point) => point.length > 0)
+          .slice(0, 30)
+      : [];
 
-    // 3. Fetch notes
-    const notes = await queryPromise(
-      'SELECT * FROM notes WHERE case_id = ? ORDER BY created_at DESC',
-      [caseId]
-    );
-
-    // 4. Fetch documents and extract text from PDFs
-    const documents = await queryPromise(
-      'SELECT * FROM documents WHERE case_id = ?',
-      [caseId]
-    );
-
-    let documentText = '';
-    for (const doc of documents) {
-      if (doc.file_path && (doc.file_type?.includes('pdf') || doc.file_path?.endsWith('.pdf'))) {
-        try {
-          const filePath = path.resolve(doc.file_path.replace(/^\//, ''));
-          if (fs.existsSync(filePath)) {
-            const dataBuffer = fs.readFileSync(filePath);
-            const pdfData = await pdfParse(dataBuffer);
-            if (pdfData.text && pdfData.text.trim()) {
-              // Limit text per document to prevent token overflow
-              const trimmedText = pdfData.text.trim().substring(0, 3000);
-              documentText += `\n--- Document: ${doc.document_name} ---\n${trimmedText}\n`;
-            }
-          }
-        } catch (pdfErr) {
-          console.error(`PDF parse error for ${doc.document_name}:`, pdfErr.message);
-        }
-      }
+    // 3. Optionally pull existing saved case notes
+    let savedNotes = [];
+    if (includeCaseNotes !== false) {
+      savedNotes = await queryPromise(
+        'SELECT note_text, created_at FROM notes WHERE case_id = ? ORDER BY created_at DESC LIMIT 50',
+        [caseId]
+      );
     }
 
-    // 5. Build the user prompt with all case data
-    const hearingsSummary = hearings.length > 0
-      ? hearings.map(h => `- ${new Date(h.hearing_date).toLocaleDateString('en-IN')} | Court: ${h.court_hall || 'N/A'} | Judge: ${h.judge_name || 'N/A'} | Status: ${h.status} | Notes: ${h.notes || 'None'}`).join('\n')
-      : 'No hearings recorded.';
+    const savedNotesSummary = savedNotes.length > 0
+      ? savedNotes.map((n) => `- ${n.note_text}`).join('\n')
+      : 'No saved case notes included.';
 
-    const notesSummary = notes.length > 0
-      ? notes.map(n => `- ${n.note_text}`).join('\n')
-      : 'No advocate notes.';
+    if (!normalizedNotesText && normalizedMainPoints.length === 0 && savedNotes.length === 0) {
+      return res.status(400).json({
+        message: 'Please add notes or main points before generating AI analysis.'
+      });
+    }
 
-    const userPrompt = `Analyze the following legal case information and generate structured insights.
+    const userPrompt = `Analyze the following legal case notes and generate structured insights.
 
 CASE INFORMATION
 Case Title: ${caseInfo.case_title}
@@ -112,30 +93,26 @@ Court: ${caseInfo.court_name || 'N/A'}
 Status: ${caseInfo.status}
 Filing Date: ${caseInfo.filing_date ? new Date(caseInfo.filing_date).toLocaleDateString('en-IN') : 'N/A'}
 
-CLIENT INFORMATION
-Name: ${caseInfo.client_name || 'N/A'}
-Phone: ${caseInfo.client_phone || 'N/A'}
-Email: ${caseInfo.client_email || 'N/A'}
-Address: ${caseInfo.client_address || 'N/A'}
+ADVOCATE NOTES (DIRECT INPUT)
+${normalizedNotesText || 'No direct notes provided.'}
 
-HEARINGS
-${hearingsSummary}
+MAIN POINTS (DIRECT INPUT)
+${normalizedMainPoints.length > 0 ? normalizedMainPoints.map((point) => `- ${point}`).join('\n') : 'No direct main points provided.'}
 
-ADVOCATE NOTES
-${notesSummary}
-
-UPLOADED DOCUMENT TEXT
-${documentText || 'No document text extracted.'}
+SAVED CASE NOTES (DATABASE)
+${savedNotesSummary}
 
 Based on the above information, generate a comprehensive analysis with:
 1. CASE SUMMARY
-2. KEY CASE POINTS
+2. MAIN FACTS AND KEY POINTS
 3. CASE CHRONOLOGY
-4. RELEVANT LAWS AND LEGAL PROVISIONS
-5. POSSIBLE LEGAL CONSIDERATIONS
-6. SUGGESTED NEXT STEPS`;
+4. LEGAL ISSUES IDENTIFIED
+5. RELEVANT LAWS AND SECTIONS
+6. ARGUMENT DIRECTIONS
+7. EVIDENCE GAPS
+8. ACTION PLAN FOR ADVOCATE`;
 
-    // 6. Call OpenAI API
+    // 4. Call OpenAI API
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const completion = await openai.chat.completions.create({
@@ -145,14 +122,14 @@ Based on the above information, generate a comprehensive analysis with:
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 2000,
+      max_tokens: 2200,
     });
 
     const aiContent = completion.choices[0].message.content;
     const tokensUsed = completion.usage?.total_tokens || 0;
     const modelUsed = completion.model || 'gpt-4.1-mini';
 
-    // 7. Save to database
+    // 5. Save to database
     const insertResult = await queryPromise(
       'INSERT INTO ai_notes (case_id, note_type, content, model_used, tokens_used) VALUES (?, ?, ?, ?, ?)',
       [caseId, 'full_analysis', aiContent, modelUsed, tokensUsed]

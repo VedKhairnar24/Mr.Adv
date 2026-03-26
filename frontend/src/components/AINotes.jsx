@@ -7,9 +7,14 @@ export default function AINotes({ caseId }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [notesText, setNotesText] = useState("");
+  const [mainPointsText, setMainPointsText] = useState("");
+  const [includeCaseNotes, setIncludeCaseNotes] = useState(true);
+  const [savedCaseNotesCount, setSavedCaseNotesCount] = useState(0);
 
   useEffect(() => {
     fetchNotes();
+    fetchSavedCaseNotesCount();
   }, [caseId]);
 
   const fetchNotes = async () => {
@@ -25,10 +30,33 @@ export default function AINotes({ caseId }) {
     }
   };
 
+  const fetchSavedCaseNotesCount = async () => {
+    try {
+      const res = await API.get(`/notes/${caseId}`);
+      setSavedCaseNotesCount(Array.isArray(res.data) ? res.data.length : 0);
+    } catch (error) {
+      setSavedCaseNotesCount(0);
+    }
+  };
+
   const generateInsights = async () => {
     try {
+      const mainPoints = mainPointsText
+        .split("\n")
+        .map((point) => point.trim())
+        .filter(Boolean);
+
+      if (!notesText.trim() && mainPoints.length === 0 && !includeCaseNotes) {
+        toast.error("Add notes or main points to generate AI analysis");
+        return;
+      }
+
       setGenerating(true);
-      const res = await API.post(`/ai/generate/${caseId}`);
+      const res = await API.post(`/ai/generate/${caseId}`, {
+        notesText,
+        mainPoints,
+        includeCaseNotes,
+      });
       toast.success("AI insights generated!");
       setNotes((prev) => [
         {
@@ -118,6 +146,60 @@ export default function AINotes({ caseId }) {
 
   return (
     <div className="detail-card" style={{ padding: "24px" }}>
+      <div
+        style={{
+          border: "1px solid rgba(200, 168, 75, 0.2)",
+          borderRadius: "8px",
+          padding: "16px",
+          marginBottom: "18px",
+          background: "rgba(15, 23, 42, 0.35)",
+        }}
+      >
+        <h3 className="detail-card-label" style={{ marginBottom: "12px" }}>Notes and Main Points for AI</h3>
+        <p className="text-xs text-slate-400" style={{ marginBottom: "12px" }}>
+          Add your notes and key points. AI will analyze this content and generate a legal summary, relevant laws and sections, and practical next steps.
+        </p>
+
+        <div style={{ display: "grid", gap: "10px" }}>
+          <div>
+            <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
+              Detailed Notes
+            </label>
+            <textarea
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value)}
+              placeholder="Add factual background, incident details, statements, dates, and procedural context..."
+              rows={5}
+              style={{ width: "100%", resize: "vertical", minHeight: "110px" }}
+              className="detail-select"
+            />
+          </div>
+
+          <div>
+            <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
+              Main Points (one point per line)
+            </label>
+            <textarea
+              value={mainPointsText}
+              onChange={(e) => setMainPointsText(e.target.value)}
+              placeholder="Example:\nComplainant alleges breach of contract on 12 Jan 2026\nNotice served but no response received"
+              rows={4}
+              style={{ width: "100%", resize: "vertical", minHeight: "90px" }}
+              className="detail-select"
+            />
+          </div>
+
+          <label className="text-xs text-slate-300" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="checkbox"
+              checked={includeCaseNotes}
+              onChange={(e) => setIncludeCaseNotes(e.target.checked)}
+            />
+            Include saved case notes from system ({savedCaseNotesCount})
+          </label>
+        </div>
+      </div>
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">

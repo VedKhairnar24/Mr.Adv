@@ -33,6 +33,7 @@ function TrashIcon() {
 
 function Cases() {
   const [cases, setCases] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -62,6 +63,15 @@ function Cases() {
       setError("Failed to load cases. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const res = await API.get('/clients/all');
+      setClients(res.data || []);
+    } catch (err) {
+      console.error('Error fetching clients:', err);
     }
   };
 
@@ -114,7 +124,10 @@ function Cases() {
     return "badge-disposed";
   };
 
-  useEffect(() => { fetchCases(); }, []);
+  useEffect(() => {
+    fetchCases();
+    fetchClients();
+  }, []);
 
   const inputClass = "w-full bg-primary border border-gold/15 rounded px-4 py-2.5 focus:ring-2 focus:ring-gold/40 focus:border-gold/40 text-white placeholder-slate-600 text-sm";
 
@@ -175,8 +188,15 @@ function Cases() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CLIENT ID *</label>
-                <input type="number" name="client_id" value={formData.client_id} onChange={handleInputChange} placeholder="Enter client ID" required className={inputClass} />
-                <p className="text-[10px] text-slate-600 mt-1">Note: Create clients first in the Clients page</p>
+                <select name="client_id" value={formData.client_id} onChange={handleInputChange} required className={inputClass}>
+                  <option value="">Select client</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      #{client.id} - {client.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-600 mt-1">Showing client ID and name. Add clients first in Clients page.</p>
               </div>
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-2 tracking-wide">CASE TITLE *</label>

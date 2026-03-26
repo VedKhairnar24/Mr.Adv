@@ -138,7 +138,66 @@ export default function Hearings() {
     return matchSearch && matchDate;
   });
 
-  const inputClass = "w-full px-4 py-2.5 bg-primary border border-gold/15 rounded focus:outline-none focus:ring-2 focus:ring-gold/40 text-white placeholder-slate-600 text-sm";
+  const labelStyle = {
+    display: "block",
+    fontFamily: "Rajdhani, sans-serif",
+    fontSize: "10px",
+    fontWeight: 700,
+    letterSpacing: "2.5px",
+    textTransform: "uppercase",
+    color: "var(--gold)",
+    marginBottom: "8px",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    height: "48px",
+    background: "var(--bg)",
+    border: "1px solid var(--border)",
+    borderRadius: "3px",
+    color: "var(--white)",
+    fontFamily: "Rajdhani, sans-serif",
+    fontSize: "14px",
+    fontWeight: 400,
+    padding: "0 14px",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+    appearance: "none",
+    WebkitAppearance: "none",
+    backgroundImage:
+      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8a84b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 14px center",
+    paddingRight: "40px",
+  };
+
+  const buttonTextStyle = {
+    fontFamily: "Rajdhani, sans-serif",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "2.5px",
+    textTransform: "uppercase",
+  };
+
+  const onFocus = (e) => {
+    e.target.style.borderColor = "rgba(200,168,75,0.5)";
+  };
+
+  const onBlur = (e) => {
+    e.target.style.borderColor = "var(--border)";
+  };
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setShowModal(false);
+    }
+  };
 
   const weekStrip = [
     { day: "MON", date: "17", iso: "2026-03-17" },
@@ -429,76 +488,324 @@ export default function Hearings() {
 
       {/* Add Hearing Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-gold/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-8 border-b border-gold/10 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white tracking-wide">Add Hearing</h2>
-              <button onClick={() => setShowModal(false)} className="text-white/50 hover:text-white text-xl">✕</button>
+        <div
+          onClick={handleOverlayClick}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(5,10,8,0.85)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <style>{`
+            @keyframes hearingModalIn {
+              from { opacity: 0; transform: translateY(16px) scale(0.98); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+
+            .hearing-modal-card::-webkit-scrollbar {
+              width: 4px;
+            }
+
+            .hearing-modal-card::-webkit-scrollbar-thumb {
+              background: var(--border);
+              border-radius: 3px;
+            }
+
+            .hearing-modal-card::-webkit-scrollbar-track {
+              background: transparent;
+            }
+
+            .hearing-modal-field::placeholder,
+            .hearing-modal-textarea::placeholder {
+              color: var(--muted2);
+              font-family: Rajdhani, sans-serif;
+            }
+
+            .hearing-modal-field[type="date"],
+            .hearing-modal-field[type="time"] {
+              color-scheme: dark;
+            }
+
+            .hearing-modal-field[type="date"]::-webkit-calendar-picker-indicator,
+            .hearing-modal-field[type="time"]::-webkit-calendar-picker-indicator {
+              filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg);
+              cursor: pointer;
+              opacity: 0.7;
+            }
+          `}</style>
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="hearing-modal-card"
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: "560px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "4px",
+              padding: "32px",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,168,75,0.08)",
+              animation: "hearingModalIn 0.25s ease-out",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: "12px",
+                left: "12px",
+                width: "20px",
+                height: "20px",
+                borderTop: "1px solid var(--gold)",
+                borderLeft: "1px solid var(--gold)",
+                opacity: 0.35,
+                pointerEvents: "none",
+              }}
+            />
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                bottom: "12px",
+                right: "12px",
+                width: "20px",
+                height: "20px",
+                borderBottom: "1px solid var(--gold)",
+                borderRight: "1px solid var(--gold)",
+                opacity: 0.35,
+                pointerEvents: "none",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "28px",
+                paddingBottom: "20px",
+                borderBottom: "1px solid rgba(180,150,80,0.12)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ width: "3px", height: "28px", background: "var(--gold)", borderRadius: "2px", flexShrink: 0 }} />
+                <h2
+                  style={{
+                    fontFamily: "Cormorant Garamond, serif",
+                    fontSize: "26px",
+                    fontWeight: 700,
+                    color: "var(--white)",
+                    lineHeight: 1,
+                  }}
+                >
+                  Add Hearing
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "3px",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--danger)";
+                  e.currentTarget.style.color = "var(--danger)";
+                  e.currentTarget.style.background = "rgba(192,57,43,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.color = "var(--muted)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">CASE *</label>
-                <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })}
-                  className={inputClass} required>
+
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Case <span style={{ color: "var(--gold)", marginLeft: "2px" }}>*</span></label>
+                <select
+                  value={form.case_id}
+                  onChange={(e) => setForm({ ...form, case_id: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  style={selectStyle}
+                  required
+                >
                   <option value="">Select Case</option>
                   {cases.map((c) => (
                     <option key={c.id} value={c.id}>{c.case_title} ({c.case_number})</option>
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "18px" }}>
                 <div>
-                  <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">HEARING DATE *</label>
-                  <input type="date" value={form.hearing_date} onChange={(e) => setForm({ ...form, hearing_date: e.target.value })}
-                    className={inputClass} required />
+                  <label style={labelStyle}>Hearing Date <span style={{ color: "var(--gold)", marginLeft: "2px" }}>*</span></label>
+                  <input
+                    type="date"
+                    value={form.hearing_date}
+                    onChange={(e) => setForm({ ...form, hearing_date: e.target.value })}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    className="hearing-modal-field"
+                    style={inputStyle}
+                    required
+                  />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">TIME</label>
-                  <input type="time" value={form.hearing_time} onChange={(e) => setForm({ ...form, hearing_time: e.target.value })}
-                    className={inputClass} />
+                  <label style={labelStyle}>Time</label>
+                  <input
+                    type="time"
+                    value={form.hearing_time}
+                    onChange={(e) => setForm({ ...form, hearing_time: e.target.value })}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    className="hearing-modal-field"
+                    style={inputStyle}
+                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">COURT NAME</label>
-                <input type="text" value={form.court_name} onChange={(e) => setForm({ ...form, court_name: e.target.value })}
-                  placeholder="e.g., District Court" className={inputClass} />
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Court Name</label>
+                <input
+                  type="text"
+                  value={form.court_name}
+                  onChange={(e) => setForm({ ...form, court_name: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  placeholder="e.g., District Court"
+                  className="hearing-modal-field"
+                  style={inputStyle}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">JUDGE NAME</label>
-                <input type="text" value={form.judge_name} onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
-                  placeholder="e.g., Justice Sharma" className={inputClass} />
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Judge Name</label>
+                <input
+                  type="text"
+                  value={form.judge_name}
+                  onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  placeholder="e.g., Justice Sharma"
+                  className="hearing-modal-field"
+                  style={inputStyle}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">STAGE</label>
-                <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })} className={inputClass}>
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Stage</label>
+                <select
+                  value={form.stage}
+                  onChange={(e) => setForm({ ...form, stage: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  style={selectStyle}
+                >
                   <option value="">Select Stage</option>
                   {stageOptions.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">NOTES</label>
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Brief note about the hearing..." rows="4" className={inputClass} style={{ minHeight: "120px", paddingTop: "12px", paddingBottom: "12px" }} />
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Notes</label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  placeholder="Brief note about the hearing..."
+                  className="hearing-modal-textarea"
+                  style={{
+                    ...inputStyle,
+                    height: "auto",
+                    minHeight: "96px",
+                    padding: "12px 14px",
+                    resize: "vertical",
+                    lineHeight: 1.6,
+                  }}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wide">NEXT HEARING DATE</label>
-                <input type="date" value={form.next_hearing_date} onChange={(e) => setForm({ ...form, next_hearing_date: e.target.value })}
-                  className={inputClass} />
+
+              <div style={{ marginBottom: 0 }}>
+                <label style={labelStyle}>Next Hearing Date</label>
+                <input
+                  type="date"
+                  value={form.next_hearing_date}
+                  onChange={(e) => setForm({ ...form, next_hearing_date: e.target.value })}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  className="hearing-modal-field"
+                  style={inputStyle}
+                />
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={submitting}
-                  className={`px-5 rounded font-bold text-sm tracking-wider transition-colors ${
-                    submitting ? "bg-slate-700 cursor-not-allowed text-slate-500" : "bg-gold hover:bg-gold/85 text-primary"
-                  }`}
-                  style={{ height: "44px", minHeight: "44px" }}>
-                  {submitting ? "ADDING..." : "ADD HEARING"}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "24px",
+                  paddingTop: "20px",
+                  borderTop: "1px solid rgba(180,150,80,0.12)",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "24px",
+                    height: "1px",
+                    background: "var(--gold)",
+                    opacity: 0.6,
+                    marginRight: "4px",
+                  }}
+                />
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-primary"
+                  style={buttonTextStyle}
+                >
+                  {submitting ? "Adding..." : "Add Hearing"}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-5 rounded font-bold text-sm tracking-wider border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
-                  style={{ height: "44px", minHeight: "44px" }}>
-                  CANCEL
+
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn-ghost"
+                  style={buttonTextStyle}
+                >
+                  Cancel
                 </button>
               </div>
             </form>
