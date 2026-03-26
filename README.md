@@ -3,105 +3,97 @@
 ![Version](https://img.shields.io/badge/version-1.0-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tech](https://img.shields.io/badge/stack-MERN%20%2B%20MySQL-orange)
 
-A modern full-stack web application built to help advocates manage **clients, cases, hearings, documents, and legal notes** — enhanced with **AI-powered case analysis**.
-
----
-
-## 🚀 Live Demo
-
-> *(Add your deployed link here)*  
-🔗 https://your-live-link.com
+A modern full-stack web application to help advocates manage **clients, cases, hearings, documents, and notes** — powered with **AI-based case analysis**.
 
 ---
 
-## 📸 Screenshots
+## 🚀 Overview
 
-### 🏠 Dashboard
-![Dashboard](./screenshots/dashboard.png)
+**Mr. Adv** is a smart legal case management platform designed to simplify daily legal operations.
 
-### 👤 Clients Page
-![Clients](./screenshots/clients.png)
-
-### 📁 Case Details
-![Cases](./screenshots/case-details.png)
-
-### 🤖 AI Case Analyzer
-![AI](./screenshots/ai-analyzer.png)
+It centralizes all legal data and enhances decision-making using AI.
 
 ---
 
-## 🧠 Overview
+# ❗ Problem Statement
 
-**Mr. Adv** is a smart legal assistant platform designed to simplify legal workflows.
+Advocates often face the following problems:
 
-It allows advocates to:
-- Organize case data
-- Track hearings and deadlines
-- Store and manage documents
-- Maintain structured notes
-- Use AI for legal insights
+- Managing multiple case files manually  
+- Losing track of hearing dates  
+- Unorganized documents and notes  
+- Difficulty in quick case understanding  
+- Time-consuming legal analysis  
+- Lack of centralized system  
+
+---
+
+# 💡 Solution
+
+**Mr. Adv solves these problems by:**
+
+- 📁 Centralizing all case data in one system  
+- 📅 Managing hearings with reminders  
+- 📂 Organizing documents per case  
+- 📝 Structuring notes for clarity  
+- 🤖 Using AI to generate:
+  - Case summaries  
+  - Key insights  
+  - Legal suggestions  
+
+<img width="1870" height="910" alt="image" src="https://github.com/user-attachments/assets/c0333692-8c28-4f5f-8a83-8f43f6acc33a" />
 
 ---
 
 ## ✨ Features
 
 ### 📁 Case Management
-- Create, update, and track cases
-- Case status & timeline
-- Detailed case view
+- Create and manage cases
+- Track status and updates
+- View case timeline
+
+<img width="1845" height="958" alt="image" src="https://github.com/user-attachments/assets/6969ea65-9572-4c86-97af-46a10067172c" />
 
 ### 👤 Client Management
-- Add and manage clients
-- Store contact details
+- Store client details
 - Link multiple cases
+- Quick access to client history
+
+<img width="1828" height="959" alt="image" src="https://github.com/user-attachments/assets/a3734d03-89f8-477f-a6b6-0e2fed0d139d" />
 
 ### 📅 Hearings System
-- Schedule hearings
+- Add hearing dates
 - Track upcoming hearings
-- Add hearing notes
-- Manage next hearing dates
+- Store hearing notes
+
+
 
 ### 📂 Document Management
 - Upload documents
-- View files in app
-- Delete and organize files
+- View and delete files
+- Case-wise organization
 
 ### 📝 Notes System
-- Manual notes per case
-- Multiple note types:
-  - Client Meeting
-  - Court Hearing
-  - Legal Research
-  - Strategy Notes
-  - Tasks
+- Manual note creation
+- Categorized note types
+- Linked with cases
 
 ### 🤖 AI Case Analyzer
-- Case summary generation
-- Key facts extraction
-- Legal issue identification
-- Relevant law suggestions
-- Strategy & next steps
-
-### 📊 Dashboard
-- Total clients & cases
-- Upcoming hearings
-- Quick insights
-
-### ⚙️ Settings
-- Profile management
-- AI configuration
-- System preferences
+- Case summary
+- Key facts
+- Legal issues
+- Relevant laws
+- Strategy suggestions
 
 ---
 
 ## 🧠 AI Capabilities
 
-- Case summarization  
-- Key point extraction  
-- Legal reasoning  
-- Strategy suggestions  
+- Legal summarization  
+- Fact extraction  
+- Case understanding  
+- Strategy guidance  
 
 ---
 
@@ -125,162 +117,3 @@ It allows advocates to:
 ---
 
 ## 📂 Project Structure
-
-```
-
-Mr.Adv/
-│
-├── backend/
-│   ├── routes/
-│   ├── controllers/
-│   ├── models/
-│   ├── uploads/
-│   └── server.js
-│
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   ├── services/
-│   │   └── App.jsx
-│
-├── .env
-├── package.json
-└── README.md
-
-```
-
----
-
-## ⚙️ Installation & Setup
-
-### 1️⃣ Clone Repository
-
-```
-
-git clone [https://github.com/your-username/mr-adv.git](https://github.com/your-username/mr-adv.git)
-cd mr-adv
-
-```
-
----
-
-### 2️⃣ Backend Setup
-
-```
-
-cd backend
-npm install
-
-```
-
-Create `.env` file:
-
-```
-
-PORT=5000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_NAME=mr_adv
-OPENAI_API_KEY=your_api_key
-
-```
-
-Run backend:
-
-```
-
-npm run dev
-
-```
-
----
-
-### 3️⃣ Frontend Setup
-
-```
-
-cd frontend
-npm install
-npm run dev
-
-```
-
----
-
-## 🌐 Application Flow
-
-```
-
-Client → Case → Hearings → Notes → Documents → AI Analysis
-
-```
-
----
-
-## 🔐 Security
-
-- API keys stored securely in `.env`
-- Sensitive legal data handling
-- Scalable for role-based access
-
----
-
-## 📈 Future Enhancements
-
-- 📄 AI Document Reader (PDF analysis)
-- 🧠 Auto Case Timeline Generator
-- 🎙️ Voice-to-text notes
-- 🔔 Notification system
-- 👥 Multi-user roles (Admin / Junior / Clerk)
-- ☁️ Cloud storage integration
-
----
-
-## 🎯 Use Cases
-
-- Individual advocates
-- Law firms
-- Legal interns
-- Case management systems
-
----
-
-## 🤝 Contribution
-
-1. Fork the repository  
-2. Create a new branch  
-3. Commit your changes  
-4. Submit a pull request  
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👨‍💻 Author
-
-**Ved Khairnar**  
-Full Stack Developer  
-
----
-
-## ⭐ Support
-
-If you find this project useful:
-
-- ⭐ Star this repository  
-- 📢 Share with others  
-- 🤝 Contribute  
-
----
-
-## 💡 Final Note
-
-**Mr. Adv is not just a CRUD application.**  
-It is a step toward building a **smart AI-powered legal assistant system** for modern advocates.
-
