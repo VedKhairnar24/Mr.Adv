@@ -127,11 +127,11 @@ function CaseTimeline({ caseId }) {
   }
 
   return (
-    <div className="detail-card">
+    <div className="detail-card" style={{ marginTop: "32px", marginBottom: "32px" }}>
       <div className="detail-card-label">Case Timeline</div>
 
       {events.length === 0 ? (
-        <p className="text-slate-500 text-center py-8 text-sm">
+        <p className="text-slate-500 text-center py-12 text-sm">
           No timeline events yet. Hearings, documents, and notes will appear here.
         </p>
       ) : (
@@ -142,27 +142,27 @@ function CaseTimeline({ caseId }) {
             style={{ background: "linear-gradient(to bottom, transparent, var(--gold) 12%, var(--gold) 88%, transparent)" }}
           />
 
-          <div className="space-y-5">
+          <div className="space-y-6">
             {events.map((event) => (
               <div key={event.id} className="relative flex items-start pl-10">
                 {/* Icon circle */}
-                <div className="absolute left-1.5 w-6 h-6 rounded-full border flex items-center justify-center bg-bg2 border-gold/60 text-gold">
+                <div className="absolute left-1.5 w-6 h-6 rounded-full border flex items-center justify-center bg-bg2 border-gold/60 text-gold shadow-lg shadow-gold/10">
                   {getIcon(event.type)}
                 </div>
 
                 {/* Event card */}
-                <div className="flex-1 bg-primary/60 rounded-lg p-4 border border-gold/5 hover:border-gold/15 transition-colors">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-white text-sm">{event.title}</h3>
-                    <span className="text-[10px] text-slate-500 tracking-wide">
+                <div className="flex-1 bg-primary/60 rounded-lg p-4 border border-gold/5 hover:border-gold/25 transition-all duration-200 hover:shadow-lg hover:shadow-gold/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-white text-sm tracking-wide">{event.title}</h3>
+                    <span className="text-[10px] text-slate-500 tracking-wider font-medium">
                       {formatDate(event.date)}
-                      {event.time ? ` at ${formatTime(event.time)}` : ""}
+                      {event.time ? ` • ${formatTime(event.time)}` : ""}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">{event.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{event.description}</p>
 
                   {event.type === "hearing" && event.status && (
-                    <span className={`inline-block mt-2 detail-status-badge ${
+                    <span className={`inline-block mt-3 detail-status-badge text-xs px-2.5 py-1 ${
                       event.status === "Completed"
                         ? "completed"
                         : event.status === "Adjourned"

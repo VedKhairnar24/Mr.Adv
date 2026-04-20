@@ -4,6 +4,71 @@ const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
 
+// Helper: Make OpenAI API call with fallback to backup key
+async function callOpenAIWithFallback(messages, options = {}) {
+  const primaryKey = process.env.OPENAI_API_KEY;
+  const backupKey = process.env.OPENAI_API_KEY_BACKUP;
+
+  if (!primaryKey) {
+    throw new Error('OpenAI API key not configured. Add OPENAI_API_KEY to your .env file.');
+  }
+
+  // Try primary key first
+  try {
+    console.log('🔄 Attempting AI request with primary API key');
+    const openai = new OpenAI({ apiKey: primaryKey });
+    const completion = await openai.chat.completions.create({
+      messages,
+      temperature: 0.3,
+      max_tokens: 2200,
+      ...options,
+    });
+    console.log('✓ Successfully used primary API key');
+    return { completion, keyUsed: 'primary' };
+  } catch (error) {
+    console.error('❌ Primary API key error:', {
+      status: error.status,
+      code: error.code,
+      message: error.message,
+      type: error.type,
+    });
+
+    // Check if it's a quota/billing error
+    const isQuotaError = error.status === 402 || 
+                         error.code === 'insufficient_quota' || 
+                         error.code === 'billing_quota_exceeded' ||
+                         error.message?.includes('quota') ||
+                         error.message?.includes('billing') ||
+                         error.message?.includes('insufficient');
+
+    if (isQuotaError && backupKey) {
+      console.warn('⚠️ Primary API key quota exceeded, attempting backup key...');
+      try {
+        const openai = new OpenAI({ apiKey: backupKey });
+        const completion = await openai.chat.completions.create({
+          messages,
+          temperature: 0.3,
+          max_tokens: 2200,
+          ...options,
+        });
+        console.log('✓ Successfully used backup API key');
+        return { completion, keyUsed: 'backup' };
+      } catch (backupError) {
+        console.error('❌ Backup API key also failed:', {
+          status: backupError.status,
+          code: backupError.code,
+          message: backupError.message,
+        });
+        throw new Error('Both primary and backup API keys failed. ' + backupError.message);
+      }
+    }
+    
+    // If not a quota error or no backup key, throw original error
+    console.error('🚨 Throwing error - not quota related or no backup key');
+    throw error;
+  }
+}
+
 // Helper: Extract text from document files
 async function extractDocumentText(filePath) {
   try {
@@ -68,7 +133,7 @@ exports.generateInsights = async (req, res) => {
   const { notesText, mainPoints, includeCaseNotes, documentIds } = req.body || {};
 
   try {
-    // Verify API key is configured
+    // Verify API keys are configured
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ message: 'OpenAI API key not configured. Add OPENAI_API_KEY to your .env file.' });
     }
@@ -173,24 +238,19 @@ Based on the above information, generate a comprehensive analysis with:
 7. EVIDENCE GAPS
 8. ACTION PLAN FOR ADVOCATE`;
 
-    // 4. Call OpenAI API
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 2200,
-    });
+    // 5. Call OpenAI API with fallback support
+    const { completion, keyUsed } = await callOpenAIWithFallback([
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ], { model: 'gpt-4.1-mini' });
 
     const aiContent = completion.choices[0].message.content;
     const tokensUsed = completion.usage?.total_tokens || 0;
     const modelUsed = completion.model || 'gpt-4.1-mini';
 
-    // 5. Save to database
+    console.log(`AI Analysis generated using ${keyUsed} API key - Tokens: ${tokensUsed}`);
+
+    // 6. Save to database
     const insertResult = await queryPromise(
       'INSERT INTO ai_notes (case_id, note_type, content, model_used, tokens_used) VALUES (?, ?, ?, ?, ?)',
       [caseId, 'full_analysis', aiContent, modelUsed, tokensUsed]
@@ -202,23 +262,44 @@ Based on the above information, generate a comprehensive analysis with:
       content: aiContent,
       model_used: modelUsed,
       tokens_used: tokensUsed,
+      api_key_used: keyUsed,
       created_at: new Date().toISOString(),
     });
 
   } catch (error) {
-    console.error('AI generation error:', error);
+    console.error('🚨 AI generation error:', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      type: error.type,
+      stack: error.stack,
+    });
 
-    if (error.status === 401 || error.code === 'invalid_api_key') {
+    // Handle API key errors
+    if (error.status === 401 || error.code === 'invalid_api_key' || error.message?.includes('invalid_api_key')) {
       return res.status(401).json({ message: 'Invalid OpenAI API key. Check your .env file.' });
     }
-    if (error.status === 429) {
+    
+    // Handle rate limit errors
+    if (error.status === 429 || error.code === 'rate_limit_exceeded') {
       return res.status(429).json({ message: 'OpenAI rate limit exceeded. Please try again later.' });
     }
-    if (error.status === 402 || error.code === 'insufficient_quota') {
-      return res.status(402).json({ message: 'OpenAI billing quota exceeded. Check your OpenAI account.' });
+    
+    // Handle quota errors
+    if (error.status === 402 || 
+        error.code === 'insufficient_quota' || 
+        error.code === 'billing_quota_exceeded' ||
+        error.message?.includes('quota') ||
+        error.message?.includes('billing')) {
+      return res.status(402).json({ message: 'Both primary and backup OpenAI API keys have reached quota limits. Please check your OpenAI account.' });
     }
 
-    res.status(500).json({ message: 'Failed to generate AI insights', error: error.message });
+    // Generic error
+    res.status(500).json({ 
+      message: 'Failed to generate AI insights', 
+      error: error.message,
+      code: error.code 
+    });
   }
 };
 

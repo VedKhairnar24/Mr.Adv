@@ -83,8 +83,9 @@ export default function AINotes({ caseId }) {
         includeCaseNotes,
         documentIds: selectedDocuments.length > 0 ? selectedDocuments : undefined,
       };
-      console.log("Sending AI request with:", payload);
+      console.log("🚀 Sending AI request with:", payload);
       const res = await API.post(`/ai/generate/${caseId}`, payload);
+      console.log("✓ AI response received:", res.data);
       toast.success("AI insights generated!");
       setNotes((prev) => [
         {
@@ -92,13 +93,20 @@ export default function AINotes({ caseId }) {
           content: res.data.content,
           model_used: res.data.model_used,
           tokens_used: res.data.tokens_used,
+          api_key_used: res.data.api_key_used,
           created_at: res.data.created_at,
         },
         ...prev,
       ]);
       setExpanded(res.data.id);
     } catch (error) {
-      const msg = error.response?.data?.message || "Failed to generate AI insights";
+      console.error("❌ AI generation error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config?.url,
+      });
+      const msg = error.response?.data?.message || error.message || "Failed to generate AI insights";
       toast.error(msg);
     } finally {
       setGenerating(false);
@@ -173,24 +181,30 @@ export default function AINotes({ caseId }) {
   };
 
   return (
-    <div className="detail-card" style={{ padding: "24px" }}>
+    <div className="detail-card" style={{ marginTop: "32px", marginBottom: "32px" }}>
       <div
         style={{
-          border: "1px solid rgba(200, 168, 75, 0.2)",
+          border: "1.5px solid rgba(200, 168, 75, 0.25)",
           borderRadius: "8px",
-          padding: "16px",
-          marginBottom: "18px",
-          background: "rgba(15, 23, 42, 0.35)",
+          padding: "20px",
+          marginBottom: "24px",
+          background: "linear-gradient(135deg, rgba(15, 23, 42, 0.5) 0%, rgba(30, 41, 59, 0.3) 100%)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(200, 168, 75, 0.1)",
         }}
       >
-        <h3 className="detail-card-label" style={{ marginBottom: "12px" }}>AI Analysis Inputs (Optional)</h3>
-        <p className="text-xs text-slate-400" style={{ marginBottom: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+          <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          <h3 className="detail-card-label" style={{ marginBottom: "0" }}>AI Analysis Inputs</h3>
+        </div>
+        <p className="text-xs text-slate-400" style={{ marginBottom: "16px", lineHeight: "1.6" }}>
           Provide at least one source: notes, main points, documents, or saved case notes. AI will analyze and generate a legal summary, relevant laws, and practical next steps.
         </p>
 
-        <div style={{ display: "grid", gap: "10px" }}>
+        <div style={{ display: "grid", gap: "14px" }}>
           <div>
-            <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
+            <label className="detail-field-label" style={{ display: "block", marginBottom: "8px", fontSize: "11px" }}>
               Detailed Notes (Optional)
             </label>
             <textarea
@@ -198,48 +212,78 @@ export default function AINotes({ caseId }) {
               onChange={(e) => setNotesText(e.target.value)}
               placeholder="Optional: Add factual background, incident details, statements, dates, and procedural context..."
               rows={5}
-              style={{ width: "100%", resize: "vertical", minHeight: "110px" }}
-              className="detail-select"
+              style={{
+                width: "100%",
+                resize: "vertical",
+                minHeight: "110px",
+                background: "rgba(51, 65, 85, 0.4)",
+                border: "1px solid rgba(200, 168, 75, 0.15)",
+                borderRadius: "6px",
+                padding: "10px 12px",
+                color: "#fff",
+                fontSize: "13px",
+                lineHeight: "1.5",
+                transition: "all 0.2s ease",
+              }}
+              className="detail-select focus:border-gold/40"
+              onFocus={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.4)")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.15)")}
             />
           </div>
 
           <div>
-            <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
+            <label className="detail-field-label" style={{ display: "block", marginBottom: "8px", fontSize: "11px" }}>
               Main Points (Optional)
             </label>
             <textarea
               value={mainPointsText}
               onChange={(e) => setMainPointsText(e.target.value)}
-              placeholder="Optional - Example:\nComplainant alleges breach of contract on 12 Jan 2026\nNotice served but no response received"
+              placeholder="Optional - Example:&#10;Complainant alleges breach of contract on 12 Jan 2026&#10;Notice served but no response received"
               rows={4}
-              style={{ width: "100%", resize: "vertical", minHeight: "90px" }}
-              className="detail-select"
+              style={{
+                width: "100%",
+                resize: "vertical",
+                minHeight: "90px",
+                background: "rgba(51, 65, 85, 0.4)",
+                border: "1px solid rgba(200, 168, 75, 0.15)",
+                borderRadius: "6px",
+                padding: "10px 12px",
+                color: "#fff",
+                fontSize: "13px",
+                lineHeight: "1.5",
+                transition: "all 0.2s ease",
+              }}
+              className="detail-select focus:border-gold/40"
+              onFocus={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.4)")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.15)")}
             />
           </div>
 
-          <label className="text-xs text-slate-300" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label className="text-xs text-slate-300" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "8px 10px", background: "rgba(200, 168, 75, 0.05)", borderRadius: "6px", border: "1px solid rgba(200, 168, 75, 0.1)", transition: "all 0.2s ease", fontSize: "12px", fontWeight: 500 }}>
             <input
               type="checkbox"
               checked={includeCaseNotes}
               onChange={(e) => setIncludeCaseNotes(e.target.checked)}
+              style={{ width: "14px", height: "14px", cursor: "pointer", flexShrink: 0 }}
             />
-            Include saved case notes from system ({savedCaseNotesCount})
+            <span>Include saved case notes from system ({savedCaseNotesCount})</span>
           </label>
 
           {documents.length > 0 && (
-            <div style={{ padding: "10px", background: "rgba(200, 168, 75, 0.05)", borderRadius: "4px", border: "1px solid rgba(200, 168, 75, 0.15)" }}>
-              <label className="text-xs text-slate-300" style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
-                📄 Include Documents in Analysis ({selectedDocuments.length}/{documents.length})
+            <div style={{ padding: "12px", background: "linear-gradient(135deg, rgba(200, 168, 75, 0.08) 0%, rgba(200, 168, 75, 0.04) 100%)", borderRadius: "6px", border: "1.5px solid rgba(200, 168, 75, 0.2)", boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.1)" }}>
+              <label className="text-xs text-slate-300" style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "11px", letterSpacing: "0.5px" }}>
+                📄 INCLUDE DOCUMENTS IN ANALYSIS ({selectedDocuments.length}/{documents.length})
               </label>
-              <div style={{ display: "grid", gap: "6px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
                 {documents.map((doc) => (
-                  <label key={doc.id} className="text-xs text-slate-400" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <label key={doc.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px 8px", background: "rgba(0, 0, 0, 0.15)", borderRadius: "4px", transition: "all 0.2s ease", border: "1px solid rgba(200, 168, 75, 0.1)", fontSize: "12px", color: "#cbd5e1" }}>
                     <input
                       type="checkbox"
                       checked={selectedDocuments.includes(doc.id)}
                       onChange={() => toggleDocument(doc.id)}
+                      style={{ width: "14px", height: "14px", cursor: "pointer", flexShrink: 0 }}
                     />
-                    <span title={doc.document_name}>{doc.document_name}</span>
+                    <span title={doc.document_name} style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{doc.document_name}</span>
                   </label>
                 ))}
               </div>
@@ -248,44 +292,75 @@ export default function AINotes({ caseId }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
           </svg>
           <h2 className="detail-card-label" style={{ marginBottom: 0 }}>AI Legal Analysis</h2>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
-          {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)" }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''}</span>}
-          {notesText.trim() && <span style={{ color: "var(--gold)" }}>✓ Notes</span>}
-          {mainPointsText.split("\n").filter(p => p.trim()).length > 0 && <span style={{ color: "var(--gold)" }}>✓ Points</span>}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
+          {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''}</span>}
+          {notesText.trim() && <span style={{ color: "var(--gold)", fontWeight: 600 }}>✓ Notes</span>}
+          {mainPointsText.split("\n").filter(p => p.trim()).length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>✓ Points</span>}
         </div>
       </div>
-        <button
-          onClick={generateInsights}
-          disabled={generating}
-          className={`detail-btn-ghost ${generating ? "opacity-60 cursor-not-allowed" : ""}`}
-          style={{ height: "34px", padding: "0 14px", color: generating ? "var(--muted)" : "var(--gold)", background: "var(--gold-dim)" }}
-        >
-          {generating ? (
-            <>
-              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent"></div>
-              ANALYZING...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-              GENERATE AI INSIGHTS
-            </>
-          )}
-        </button>
-      </div>
+
+      <button
+        onClick={generateInsights}
+        disabled={generating}
+        className={`detail-btn-ghost ${generating ? "opacity-60 cursor-not-allowed" : ""}`}
+        style={{
+          height: "40px",
+          padding: "0 16px",
+          color: generating ? "var(--muted)" : "var(--gold)",
+          background: generating ? "var(--gold-dim)" : "linear-gradient(135deg, rgba(200, 168, 75, 0.15) 0%, rgba(200, 168, 75, 0.08) 100%)",
+          border: `1.5px solid ${generating ? "rgba(200, 168, 75, 0.2)" : "rgba(200, 168, 75, 0.35)"}`,
+          borderRadius: "6px",
+          fontWeight: 600,
+          fontSize: "12px",
+          letterSpacing: "1px",
+          cursor: generating ? "not-allowed" : "pointer",
+          transition: "all 0.3s ease",
+          boxShadow: generating ? "none" : "0 4px 12px rgba(200, 168, 75, 0.1)",
+        }}
+        onMouseEnter={(e) => {
+          if (!generating) {
+            e.target.style.background = "linear-gradient(135deg, rgba(200, 168, 75, 0.25) 0%, rgba(200, 168, 75, 0.15) 100%)";
+            e.target.style.borderColor = "rgba(200, 168, 75, 0.5)";
+            e.target.style.boxShadow = "0 6px 20px rgba(200, 168, 75, 0.2)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!generating) {
+            e.target.style.background = "linear-gradient(135deg, rgba(200, 168, 75, 0.15) 0%, rgba(200, 168, 75, 0.08) 100%)";
+            e.target.style.borderColor = "rgba(200, 168, 75, 0.35)";
+            e.target.style.boxShadow = "0 4px 12px rgba(200, 168, 75, 0.1)";
+          }
+        }}
+      >
+        {generating ? (
+          <>
+            <div style={{ display: "inline-block", marginRight: "8px" }} className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent"></div>
+            ANALYZING...
+          </>
+        ) : (
+          <>
+            <svg style={{ display: "inline-block", marginRight: "8px" }} className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+            GENERATE AI INSIGHTS
+          </>
+        )}
+      </button>
+
+      {!loading && notes.length === 0 && (
+        <div
+          style={{
             textAlign: "center",
           }}
         >
-          <svg className="mx-auto w-5 h-5 text-gold/40 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <svg className="mx-auto w-5 h-5 text-gold/40 mb-3" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
           </svg>
           <p className="text-slate-400 text-sm">No AI analysis generated yet.</p>
@@ -294,7 +369,7 @@ export default function AINotes({ caseId }) {
 
       {/* Notes list */}
       {!loading && notes.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3" style={{ marginTop: "24px" }}>
           {notes.map((note) => (
             <div key={note.id} className="border border-gold/10 rounded-lg overflow-hidden">
               {/* Accordion header */}

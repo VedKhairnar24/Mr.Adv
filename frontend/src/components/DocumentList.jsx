@@ -38,7 +38,7 @@ export default function DocumentList({ caseId }) {
   };
 
   return (
-    <div className="detail-card" style={{ marginBottom: "20px" }}>
+    <div className="detail-card" style={{ marginBottom: "32px", marginTop: "32px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <div className="detail-card-label" style={{ marginBottom: 0 }}>Case Documents</div>
         <span

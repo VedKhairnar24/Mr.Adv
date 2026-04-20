@@ -163,7 +163,7 @@ export default function CaseDetail() {
 
       <div className="detail-content detail-two-col">
         <main>
-          <section className="detail-card with-corners" style={{ marginBottom: "20px" }}>
+          <section className="detail-card with-corners" style={{ marginBottom: "32px" }}>
             <div className="detail-card-label">Case Information</div>
 
             <div className="detail-info-grid">
@@ -194,7 +194,7 @@ export default function CaseDetail() {
             </div>
           </section>
 
-          <section className="detail-card" style={{ marginBottom: "20px" }}>
+          <section className="detail-card" style={{ marginBottom: "32px" }}>
             <div className="detail-card-label">Client Information</div>
             <div className="detail-info-grid">
               <div className="detail-field">
