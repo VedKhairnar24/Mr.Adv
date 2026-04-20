@@ -52,10 +52,9 @@ async function generateDashboardInsights(req, res) {
       },
     ];
 
-    // Call AI service with fallback
+    // Call AI service
     console.log("🤖 Calling AI service...");
     const aiResponse = await generateInsight(messages, {
-      model: process.env.OPENAI_MODEL || "gpt-4",
       temperature: 0.3,
       maxTokens: 1500,
     });

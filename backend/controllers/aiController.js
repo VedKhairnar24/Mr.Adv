@@ -1,9 +1,9 @@
-const { generateInsight, analyzeDocumentOnly, generateRealDocumentInsights } = require('../services/aiService');
+const { generateInsight } = require('../services/aiService');
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
-const { chunkText, cleanText } = require('../utils/chunkText');
+const { cleanText } = require('../utils/chunkText');
 
 // Helper: Extract text from document files
 async function extractDocumentText(filePath) {
@@ -58,13 +58,13 @@ Your response must always generate the following sections:
 8. ACTION PLAN FOR ADVOCATE — Practical next steps to progress the matter.`;
 
 /**
- * Generate AI insights for a case
+ * Generate AI insights for a case using document analysis
  * POST /api/ai/generate/:caseId
  */
 exports.generateInsights = async (req, res) => {
   const { caseId } = req.params;
   const advocateId = req.advocateId;
-  const { notesText, mainPoints, includeCaseNotes, documentIds } = req.body || {};
+  const { documentIds } = req.body || {};
 
   try {
     // Helper function for database queries
@@ -92,157 +92,78 @@ exports.generateInsights = async (req, res) => {
 
     const caseInfo = caseData[0];
 
-    // 2. Normalize direct notes input
-    const normalizedNotesText = typeof notesText === 'string' ? notesText.trim() : '';
-    const normalizedMainPoints = Array.isArray(mainPoints)
-      ? mainPoints
-          .map((point) => String(point || '').trim())
-          .filter((point) => point.length > 0)
-          .slice(0, 30)
-      : [];
-
-    // 3. Optionally pull existing saved case notes
-    let savedNotes = [];
-    if (includeCaseNotes !== false) {
-      savedNotes = await queryPromise(
-        'SELECT note_text, created_at FROM notes WHERE case_id = ? ORDER BY created_at DESC LIMIT 50',
-        [caseId]
-      );
-    }
-
-    const savedNotesSummary = savedNotes.length > 0
-      ? savedNotes.map((n) => `- ${n.note_text}`).join('\n')
-      : 'No saved case notes included.';
-
-    // 4. Extract text from documents if provided
-    let documentContent = '';
-    if (Array.isArray(documentIds) && documentIds.length > 0) {
-      try {
-        const documents = await queryPromise(
-          `SELECT id, document_name, file_path FROM documents 
-           WHERE id IN (${documentIds.map(() => '?').join(',')}) 
-           AND case_id = ? 
-           LIMIT 10`,
-          [...documentIds, caseId]
-        );
-
-        for (const doc of documents) {
-          const text = await extractDocumentText(doc.file_path);
-          if (text) {
-            documentContent += `\n\n--- Document: ${doc.document_name} ---\n${text}`;
-          }
-        }
-      } catch (error) {
-        console.error('Error processing documents:', error.message);
-      }
-    }
-
-    if (!normalizedNotesText && normalizedMainPoints.length === 0 && savedNotes.length === 0 && !documentContent) {
+    // 2. Extract text from documents
+    if (!Array.isArray(documentIds) || documentIds.length === 0) {
       return res.status(400).json({
-        message: 'Please provide at least one source: notes, main points, documents, or enable saved case notes for AI analysis.'
+        message: 'Please select at least one document for AI analysis.'
       });
     }
 
-    // 5. Determine analysis type: Use REAL document insights if documents provided, else generic analysis
-    console.log('🤖 Calling AI service with Hugging Face...');
-    
-    let aiResponse;
-    
-    // If documents are provided, use REAL document insights (extract actual facts, structured format)
-    if (documentContent && documentContent.trim().length > 0) {
-      console.log('📄 Using REAL document-based insights (actual extraction, structured output)...');
-      
-      // Extract just the document text for analysis (not mixed with other inputs)
-      const cleanedDocumentContent = cleanText(documentContent);
-      
-      // Use the new real document insights generator for better structured output
-      aiResponse = await generateRealDocumentInsights(cleanedDocumentContent, {
-        temperature: 0.2, // Lower temperature for factual output
-        maxTokens: 2500,
-        timeout: 20000,
-      });
-      
-      console.log(`✅ Real document insights complete - Structured format with bullet points and summary`);
-    } else {
-      // If NO documents, use generic insight generation from notes
-      console.log('📝 Using generic analysis from notes/main points...');
-      
-      const userPrompt = `Analyze the following legal case notes and generate structured insights.
+    let documentContent = '';
+    try {
+      const documents = await queryPromise(
+        `SELECT id, document_name, file_path FROM documents 
+         WHERE id IN (${documentIds.map(() => '?').join(',')}) 
+         AND case_id = ? 
+         LIMIT 10`,
+        [...documentIds, caseId]
+      );
 
-CASE INFORMATION
-Case Title: ${caseInfo.case_title}
-Case Number: ${caseInfo.case_number || 'N/A'}
-Case Type: ${caseInfo.case_type || 'N/A'}
-Court: ${caseInfo.court_name || 'N/A'}
-Client: ${caseInfo.client_name || 'N/A'}
-Status: ${caseInfo.status}
-Filing Date: ${caseInfo.filing_date ? new Date(caseInfo.filing_date).toLocaleDateString('en-IN') : 'N/A'}
-
-ADVOCATE NOTES (DIRECT INPUT)
-${normalizedNotesText || 'No direct notes provided.'}
-
-MAIN POINTS (DIRECT INPUT)
-${normalizedMainPoints.length > 0 ? normalizedMainPoints.map((point) => `- ${point}`).join('\n') : 'No direct main points provided.'}
-
-SAVED CASE NOTES (DATABASE)
-${savedNotesSummary}
-
-Based on the above information, generate a comprehensive analysis with:
-1. CASE SUMMARY
-2. MAIN FACTS AND KEY POINTS
-3. CASE CHRONOLOGY
-4. LEGAL ISSUES IDENTIFIED
-5. RELEVANT LAWS AND SECTIONS
-6. ARGUMENT DIRECTIONS
-7. EVIDENCE GAPS
-8. ACTION PLAN FOR ADVOCATE`;
-
-      aiResponse = await generateInsight([
-        { role: 'system', content: 'You are an AI Legal Assistant designed to support advocates by analyzing case notes and providing actionable legal guidance.' },
-        { role: 'user', content: userPrompt },
-      ], {
-        temperature: 0.3,
-        maxTokens: 2500,
-        timeout: 20000,
-      });
-      
-      console.log(`✅ Generic analysis generated via ${aiResponse.provider}`);
+      for (const doc of documents) {
+        const text = await extractDocumentText(doc.file_path);
+        if (text) {
+          documentContent += `\n\n--- Document: ${doc.document_name} ---\n${text}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error processing documents:', error.message);
+      return res.status(500).json({ message: 'Failed to process documents' });
     }
+
+    if (!documentContent || documentContent.trim().length === 0) {
+      return res.status(400).json({
+        message: 'Could not extract text from selected documents. Please try different files.'
+      });
+    }
+
+    // 3. Generate insights using OpenRouter
+    console.log('🤖 Calling OpenRouter AI service for document analysis...');
+    
+    const cleanedDocumentContent = cleanText(documentContent);
+    
+    const aiResponse = await generateInsight(cleanedDocumentContent, {
+      temperature: 0.2,
+      maxTokens: 2500,
+      timeout: 30000,
+    });
+    
+    console.log(`✅ AI insights generated via ${aiResponse.provider}`);
 
     const aiContent = aiResponse.insight;
-    const provider = aiResponse.provider;
-    const status = aiResponse.status;
-    const analysisType = documentContent ? 'real_document_insights' : 'generic_analysis';
 
-    console.log(`✅ AI Analysis generated via ${provider} (${status})`);
-
-    // 6. Save to database
+    // 4. Save to database
     const insertResult = await queryPromise(
       'INSERT INTO ai_notes (case_id, note_type, content, model_used, tokens_used) VALUES (?, ?, ?, ?, ?)',
-      [caseId, analysisType, aiContent, provider, aiResponse.tokensUsed || 0]
+      [caseId, 'document_analysis', aiContent, aiResponse.provider, aiResponse.tokensUsed || 0]
     );
 
     res.json({
       message: 'AI insights generated successfully',
       id: insertResult.insertId,
       content: aiContent,
-      model_used: provider,
+      model_used: aiResponse.provider,
       tokens_used: aiResponse.tokensUsed || 0,
-      api_status: status,
-      analysis_type: analysisType,
-      is_document_based: documentContent ? true : false,
+      api_status: 'success',
       created_at: new Date().toISOString(),
     });
 
   } catch (error) {
     console.error('🚨 AI generation error:', {
       message: error.message,
-      stack: error.stack,
     });
 
     res.status(500).json({ 
-      message: 'Failed to generate AI insights', 
-      error: error.message,
+      message: 'Insights temporarily unavailable. Please retry.',
     });
   }
 };
@@ -302,6 +223,50 @@ exports.deleteNote = async (req, res) => {
   } catch (error) {
     console.error('Delete AI note error:', error);
     res.status(500).json({ message: 'Failed to delete AI note', error: error.message });
+  }
+};
+
+/**
+ * Make.com compatible endpoint for AI insights
+ * POST /api/ai/make-insights
+ * Accepts: { "text": "<document_text>" }
+ * Returns: { "insight": "<AI_RESPONSE>" }
+ */
+exports.makeInsights = async (req, res) => {
+  try {
+    const { text } = req.body || {};
+
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return res.status(400).json({
+        insight: 'Error: No document text provided. Please send a valid text input.'
+      });
+    }
+
+    console.log('📄 Make.com request received - Processing document...');
+
+    // Generate insights using OpenRouter
+    const aiResponse = await generateInsight(text, {
+      temperature: 0.2,
+      maxTokens: 2500,
+      timeout: 30000,
+    });
+
+    console.log(`✅ Make.com insights generated via ${aiResponse.provider}`);
+
+    // Return in Make.com compatible format
+    res.json({
+      insight: aiResponse.insight
+    });
+
+  } catch (error) {
+    console.error('🚨 Make.com AI generation error:', {
+      message: error.message,
+    });
+
+    // Return user-friendly error (never expose raw errors or API details)
+    res.json({
+      insight: 'Insights temporarily unavailable. Please retry.'
+    });
   }
 };
 

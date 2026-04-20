@@ -8,16 +8,11 @@ export default function AINotes({ caseId }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(null);
-  const [notesText, setNotesText] = useState("");
-  const [mainPointsText, setMainPointsText] = useState("");
-  const [includeCaseNotes, setIncludeCaseNotes] = useState(true);
   const [selectedDocuments, setSelectedDocuments] = useState([]);
-  const [savedCaseNotesCount, setSavedCaseNotesCount] = useState(0);
 
   useEffect(() => {
     fetchNotes();
     fetchDocuments();
-    fetchSavedCaseNotesCount();
   }, [caseId]);
 
   const fetchNotes = async () => {
@@ -37,7 +32,6 @@ export default function AINotes({ caseId }) {
     try {
       const res = await API.get(`/documents/${caseId}`);
       const docs = Array.isArray(res.data) ? res.data : [];
-      console.log("Fetched documents:", docs); // Debug log
       setDocuments(docs);
       // Auto-select all documents when they're loaded
       if (docs.length > 0) {
@@ -49,15 +43,6 @@ export default function AINotes({ caseId }) {
     }
   };
 
-  const fetchSavedCaseNotesCount = async () => {
-    try {
-      const res = await API.get(`/notes/${caseId}`);
-      setSavedCaseNotesCount(Array.isArray(res.data) ? res.data.length : 0);
-    } catch (error) {
-      setSavedCaseNotesCount(0);
-    }
-  };
-
   const toggleDocument = (docId) => {
     setSelectedDocuments((prev) =>
       prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
@@ -66,22 +51,14 @@ export default function AINotes({ caseId }) {
 
   const generateInsights = async () => {
     try {
-      const mainPoints = mainPointsText
-        .split("\n")
-        .map((point) => point.trim())
-        .filter(Boolean);
-
-      if (!notesText.trim() && mainPoints.length === 0 && !includeCaseNotes && selectedDocuments.length === 0) {
-        toast.error("Please add at least: notes, main points, documents, or enable saved case notes");
+      if (selectedDocuments.length === 0) {
+        toast.error("Please select at least one document for AI analysis");
         return;
       }
 
       setGenerating(true);
       const payload = {
-        notesText,
-        mainPoints,
-        includeCaseNotes,
-        documentIds: selectedDocuments.length > 0 ? selectedDocuments : undefined,
+        documentIds: selectedDocuments,
       };
       console.log("🚀 Sending AI request with:", payload);
       const res = await API.post(`/ai/generate/${caseId}`, payload);
@@ -93,7 +70,6 @@ export default function AINotes({ caseId }) {
           content: res.data.content,
           model_used: res.data.model_used,
           tokens_used: res.data.tokens_used,
-          api_key_used: res.data.api_key_used,
           created_at: res.data.created_at,
         },
         ...prev,
@@ -103,11 +79,8 @@ export default function AINotes({ caseId }) {
       console.error("❌ AI generation error:", {
         message: error.message,
         status: error.response?.status,
-        data: error.response?.data,
-        config: error.config?.url,
       });
-      const msg = error.response?.data?.message || error.message || "Failed to generate AI insights";
-      toast.error(msg);
+      toast.error("Insights temporarily unavailable. Please retry.");
     } finally {
       setGenerating(false);
     }
@@ -155,25 +128,48 @@ export default function AINotes({ caseId }) {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Detect section headers (various formats)
+      // Clean markdown formatting from the line
+      let cleanedLine = trimmed
+        .replace(/\*\*(.+?)\*\*/g, '$1')  // Remove **bold**
+        .replace(/\*(.+?)\*/g, '$1')      // Remove *italic*
+        .replace(/__(.+?)__/g, '$1')      // Remove __bold__
+        .replace(/_(.+?)_/g, '$1')        // Remove _italic_
+        .replace(/^#+\s*/, '')            // Remove # headers
+        .replace(/^[-*]\s+/, '');         // Remove list markers
+
+      // Detect section headers
       const isHeader =
-        /^#+\s/.test(trimmed) ||
-        /^\d+\.\s*[A-Z]{2,}/.test(trimmed) ||
-        /^[A-Z][A-Z\s&]{3,}$/.test(trimmed) ||
-        /^\*\*[A-Z]/.test(trimmed);
+        /^\d+\.\s*[A-Z]/.test(trimmed) ||  // "1. Case Summary"
+        /^[A-Z][A-Z\s&\/]{3,}:?$/.test(trimmed) ||  // "CASE SUMMARY" or "KEY INSIGHTS:"
+        /^(case summary|key insights|timeline|risks|missing information)/i.test(trimmed);
 
       if (isHeader) {
         flushSection();
-        currentSection = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "").replace(/^[\d.]+\s*/, "");
+        // Clean the header text
+        currentSection = cleanedLine
+          .replace(/^\d+\.\s*/, '')  // Remove "1. "
+          .replace(/:$/, '')          // Remove trailing colon
+          .trim();
         continue;
       }
 
       // Detect separator lines
       if (/^[-=]{3,}$/.test(trimmed)) continue;
 
-      // Clean bullet points
-      const cleaned = trimmed.replace(/^[-•*]\s*/, "• ").replace(/^\d+\.\s/, "");
-      currentItems.push(cleaned);
+      // Clean bullet points and add proper formatting
+      const isBullet = /^[-]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed);
+      if (isBullet) {
+        const bulletText = cleanedLine.replace(/^-\s*/, '').replace(/^\d+\.\s*/, '');
+        currentItems.push(
+          <div key={currentItems.length} className="flex items-start gap-2 ml-2">
+            <span className="text-gold mt-1 flex-shrink-0">•</span>
+            <span>{bulletText}</span>
+          </div>
+        );
+      } else {
+        // Regular paragraph text
+        currentItems.push(<p key={currentItems.length}>{cleanedLine}</p>);
+      }
     }
     flushSection();
 
@@ -196,100 +192,36 @@ export default function AINotes({ caseId }) {
           <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
           </svg>
-          <h3 className="detail-card-label" style={{ marginBottom: "0" }}>AI Analysis Inputs</h3>
+          <h3 className="detail-card-label" style={{ marginBottom: "0" }}>Select Documents for AI Analysis</h3>
         </div>
         <p className="text-xs text-slate-400" style={{ marginBottom: "16px", lineHeight: "1.6" }}>
-          Provide at least one source: notes, main points, documents, or saved case notes. AI will analyze and generate a legal summary, relevant laws, and practical next steps.
+          Choose one or more case documents. AI will analyze the content and generate structured legal insights including case summary, key points, timeline, and recommendations.
         </p>
 
-        <div style={{ display: "grid", gap: "14px" }}>
-          <div>
-            <label className="detail-field-label" style={{ display: "block", marginBottom: "8px", fontSize: "11px" }}>
-              Detailed Notes (Optional)
+        {documents.length > 0 ? (
+          <div style={{ padding: "12px", background: "linear-gradient(135deg, rgba(200, 168, 75, 0.08) 0%, rgba(200, 168, 75, 0.04) 100%)", borderRadius: "6px", border: "1.5px solid rgba(200, 168, 75, 0.2)", boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.1)" }}>
+            <label className="text-xs text-slate-300" style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "11px", letterSpacing: "0.5px" }}>
+              📄 DOCUMENTS ({selectedDocuments.length}/{documents.length})
             </label>
-            <textarea
-              value={notesText}
-              onChange={(e) => setNotesText(e.target.value)}
-              placeholder="Optional: Add factual background, incident details, statements, dates, and procedural context..."
-              rows={5}
-              style={{
-                width: "100%",
-                resize: "vertical",
-                minHeight: "110px",
-                background: "rgba(51, 65, 85, 0.4)",
-                border: "1px solid rgba(200, 168, 75, 0.15)",
-                borderRadius: "6px",
-                padding: "10px 12px",
-                color: "#fff",
-                fontSize: "13px",
-                lineHeight: "1.5",
-                transition: "all 0.2s ease",
-              }}
-              className="detail-select focus:border-gold/40"
-              onFocus={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.4)")}
-              onBlur={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.15)")}
-            />
-          </div>
-
-          <div>
-            <label className="detail-field-label" style={{ display: "block", marginBottom: "8px", fontSize: "11px" }}>
-              Main Points (Optional)
-            </label>
-            <textarea
-              value={mainPointsText}
-              onChange={(e) => setMainPointsText(e.target.value)}
-              placeholder="Optional - Example:&#10;Complainant alleges breach of contract on 12 Jan 2026&#10;Notice served but no response received"
-              rows={4}
-              style={{
-                width: "100%",
-                resize: "vertical",
-                minHeight: "90px",
-                background: "rgba(51, 65, 85, 0.4)",
-                border: "1px solid rgba(200, 168, 75, 0.15)",
-                borderRadius: "6px",
-                padding: "10px 12px",
-                color: "#fff",
-                fontSize: "13px",
-                lineHeight: "1.5",
-                transition: "all 0.2s ease",
-              }}
-              className="detail-select focus:border-gold/40"
-              onFocus={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.4)")}
-              onBlur={(e) => (e.target.style.borderColor = "rgba(200, 168, 75, 0.15)")}
-            />
-          </div>
-
-          <label className="text-xs text-slate-300" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "8px 10px", background: "rgba(200, 168, 75, 0.05)", borderRadius: "6px", border: "1px solid rgba(200, 168, 75, 0.1)", transition: "all 0.2s ease", fontSize: "12px", fontWeight: 500 }}>
-            <input
-              type="checkbox"
-              checked={includeCaseNotes}
-              onChange={(e) => setIncludeCaseNotes(e.target.checked)}
-              style={{ width: "14px", height: "14px", cursor: "pointer", flexShrink: 0 }}
-            />
-            <span>Include saved case notes from system ({savedCaseNotesCount})</span>
-          </label>
-
-          {documents.length > 0 && (
-            <div style={{ padding: "12px", background: "linear-gradient(135deg, rgba(200, 168, 75, 0.08) 0%, rgba(200, 168, 75, 0.04) 100%)", borderRadius: "6px", border: "1.5px solid rgba(200, 168, 75, 0.2)", boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.1)" }}>
-              <label className="text-xs text-slate-300" style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "11px", letterSpacing: "0.5px" }}>
-                📄 INCLUDE DOCUMENTS IN ANALYSIS ({selectedDocuments.length}/{documents.length})
-              </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
-                {documents.map((doc) => (
-                  <label key={doc.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px 8px", background: "rgba(0, 0, 0, 0.15)", borderRadius: "4px", transition: "all 0.2s ease", border: "1px solid rgba(200, 168, 75, 0.1)", fontSize: "12px", color: "#cbd5e1" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedDocuments.includes(doc.id)}
-                      onChange={() => toggleDocument(doc.id)}
-                      style={{ width: "14px", height: "14px", cursor: "pointer", flexShrink: 0 }}
-                    />
-                    <span title={doc.document_name} style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{doc.document_name}</span>
-                  </label>
-                ))}
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
+              {documents.map((doc) => (
+                <label key={doc.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px 8px", background: "rgba(0, 0, 0, 0.15)", borderRadius: "4px", transition: "all 0.2s ease", border: "1px solid rgba(200, 168, 75, 0.1)", fontSize: "12px", color: "#cbd5e1" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedDocuments.includes(doc.id)}
+                    onChange={() => toggleDocument(doc.id)}
+                    style={{ width: "14px", height: "14px", cursor: "pointer", flexShrink: 0 }}
+                  />
+                  <span title={doc.document_name} style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{doc.document_name}</span>
+                </label>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px", color: "#94a3b8" }}>
+            <p className="text-sm">No documents uploaded yet. Upload documents first to use AI analysis.</p>
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
@@ -300,9 +232,7 @@ export default function AINotes({ caseId }) {
           <h2 className="detail-card-label" style={{ marginBottom: 0 }}>AI Legal Analysis</h2>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
-          {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''}</span>}
-          {notesText.trim() && <span style={{ color: "var(--gold)", fontWeight: 600 }}>✓ Notes</span>}
-          {mainPointsText.split("\n").filter(p => p.trim()).length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>✓ Points</span>}
+          {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''} selected</span>}
         </div>
       </div>
 

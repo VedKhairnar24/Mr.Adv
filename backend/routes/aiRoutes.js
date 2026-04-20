@@ -24,4 +24,11 @@ router.get('/notes/:caseId', verifyToken, aiController.getNotes);
  */
 router.delete('/notes/:id', verifyToken, aiController.deleteNote);
 
+/**
+ * @route   POST /api/ai/make-insights
+ * @desc    Make.com compatible AI insights endpoint
+ * @access  Public (for webhook integration)
+ */
+router.post('/make-insights', aiController.makeInsights);
+
 module.exports = router;
