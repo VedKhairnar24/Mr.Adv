@@ -9,6 +9,10 @@
 # Subdirectories with their own .gitignore
 
 
+# Test Files (may contain sensitive data)
+test-*.js
+test-*.ts
+
 # Documentation and temporary files
 *.tmp
 *.temp
