@@ -52,10 +52,9 @@ async function generateDashboardInsights(req, res) {
       },
     ];
 
-    // Call AI service with fallback
+    // Call AI service
     console.log("🤖 Calling AI service...");
     const aiResponse = await generateInsight(messages, {
-      model: process.env.OPENAI_MODEL || "gpt-4",
       temperature: 0.3,
       maxTokens: 1500,
     });
@@ -82,12 +81,11 @@ async function generateDashboardInsights(req, res) {
       status: error.status,
     });
 
-    res.status(500).json({
+    res.status(503).json({
       success: false,
-      error: "Failed to generate insights",
-      message: error.message,
-      hint: "Please try again later. The system will attempt to use available AI providers.",
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      error: "Insights temporarily unavailable",
+      message: "Insights temporarily unavailable. Please retry.",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 }
@@ -169,10 +167,11 @@ async function getCaseInsights(req, res) {
   } catch (error) {
     console.error("❌ Error generating case insights:", error.message);
 
-    res.status(500).json({
+    res.status(503).json({
       success: false,
-      error: "Failed to generate case insights",
-      message: error.message,
+      error: "Insights temporarily unavailable",
+      message: "Insights temporarily unavailable. Please retry.",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 }

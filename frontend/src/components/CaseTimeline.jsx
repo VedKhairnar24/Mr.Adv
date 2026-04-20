@@ -5,6 +5,18 @@ function CaseTimeline({ caseId }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredId, setHoveredId] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(!document.documentElement.classList.contains('light-theme'));
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkMode(!document.documentElement.classList.contains('light-theme'));
+    };
+    
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!caseId) return;
@@ -112,28 +124,38 @@ function CaseTimeline({ caseId }) {
   };
 
   const getTypeColor = (type) => {
+    const isDarkMode = !document.documentElement.classList.contains('light-theme');
     switch (type) {
       case "hearing":
-        return "#a855f7"; // purple
+        return isDarkMode ? "#a855f7" : "#9333ea"; // purple
       case "document":
-        return "#3b82f6"; // blue
+        return isDarkMode ? "#3b82f6" : "#2563eb"; // blue
       case "note":
-        return "#c8a84b"; // gold
+        return "#c8a84b"; // gold (same for both themes)
       default:
-        return "#64748b"; // slate
+        return isDarkMode ? "#64748b" : "#6b7280"; // slate
     }
   };
 
   const getTypeGradient = (type) => {
+    const isDarkMode = !document.documentElement.classList.contains('light-theme');
     switch (type) {
       case "hearing":
-        return "linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%)";
+        return isDarkMode
+          ? "linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%)"
+          : "linear-gradient(135deg, rgba(147, 51, 234, 0.12) 0%, rgba(147, 51, 234, 0.04) 100%)";
       case "document":
-        return "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)";
+        return isDarkMode
+          ? "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)"
+          : "linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.04) 100%)";
       case "note":
-        return "linear-gradient(135deg, rgba(200, 168, 75, 0.15) 0%, rgba(200, 168, 75, 0.05) 100%)";
+        return isDarkMode
+          ? "linear-gradient(135deg, rgba(200, 168, 75, 0.15) 0%, rgba(200, 168, 75, 0.05) 100%)"
+          : "linear-gradient(135deg, rgba(184, 146, 15, 0.12) 0%, rgba(184, 146, 15, 0.04) 100%)";
       default:
-        return "linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(100, 116, 139, 0.05) 100%)";
+        return isDarkMode
+          ? "linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(100, 116, 139, 0.05) 100%)"
+          : "linear-gradient(135deg, rgba(107, 114, 128, 0.12) 0%, rgba(107, 114, 128, 0.04) 100%)";
     }
   };
 
@@ -184,8 +206,12 @@ function CaseTimeline({ caseId }) {
         style={{
           marginTop: "32px",
           marginBottom: "32px",
-          background: "linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.3) 100%)",
-          border: "1px solid rgba(200, 168, 75, 0.1)",
+          background: isDarkMode
+            ? "linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.3) 100%)"
+            : "linear-gradient(135deg, rgba(245, 242, 237, 0.4) 0%, rgba(250, 250, 247, 0.3) 100%)",
+          border: isDarkMode
+            ? "1px solid rgba(200, 168, 75, 0.1)"
+            : "1px solid rgba(184, 146, 15, 0.15)",
           backdropFilter: "blur(10px)",
         }}
       >
@@ -254,7 +280,7 @@ function CaseTimeline({ caseId }) {
             <div className="detail-card-label" style={{ marginBottom: "2px", letterSpacing: "0.5px" }}>
               Case Timeline
             </div>
-            <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>
+            <p style={{ fontSize: "11px", color: "var(--muted)", margin: 0 }}>
               {events.length} {events.length === 1 ? "event" : "events"}
             </p>
           </div>
@@ -268,7 +294,7 @@ function CaseTimeline({ caseId }) {
               alignItems: "center",
               gap: "8px",
               fontSize: "11px",
-              color: "#cbd5e1",
+              color: "var(--muted)",
             }}
           >
             <div
@@ -283,7 +309,7 @@ function CaseTimeline({ caseId }) {
                 justifyContent: "center",
                 fontSize: "10px",
                 fontWeight: 600,
-                color: "#22c55e",
+                color: "var(--success)",
               }}
             >
               {events.filter((e) => e.status === "Completed").length}
@@ -326,10 +352,10 @@ function CaseTimeline({ caseId }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 2m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p style={{ fontSize: "14px", fontWeight: 500, color: "#cbd5e1", marginBottom: "8px" }}>
+          <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--white)", marginBottom: "8px" }}>
             No events yet
           </p>
-          <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
+          <p style={{ fontSize: "12px", color: "var(--muted)", margin: 0 }}>
             Hearings, documents, and notes will appear here as they are added
           </p>
         </div>
@@ -448,7 +474,7 @@ function CaseTimeline({ caseId }) {
                           style={{
                             fontSize: "13px",
                             fontWeight: 600,
-                            color: "#f1f5f9",
+                            color: "var(--white)",
                             margin: 0,
                             letterSpacing: "0.3px",
                             lineHeight: "1.4",
@@ -466,7 +492,7 @@ function CaseTimeline({ caseId }) {
                         alignItems: "center",
                         gap: "6px",
                         fontSize: "11px",
-                        color: "#cbd5e1",
+                        color: "var(--muted)",
                         fontWeight: 500,
                         whiteSpace: "nowrap",
                         padding: "4px 8px",
@@ -492,7 +518,7 @@ function CaseTimeline({ caseId }) {
                   <p
                     style={{
                       fontSize: "12px",
-                      color: "#cbd5e1",
+                      color: "var(--muted)",
                       lineHeight: "1.5",
                       margin: "10px 0 0 0",
                       wordBreak: "break-word",

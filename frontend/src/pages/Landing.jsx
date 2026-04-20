@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import brandLogo from './img/Mr.Adv logo.png';
+import ThemeToggle from '../components/ThemeToggle';
 import '../styles/landing.css';
 
 export default function Landing() {
@@ -101,6 +102,7 @@ export default function Landing() {
               {link}
             </a>
           ))}
+          <ThemeToggle />
           <button
             onClick={() => navigate("/login")}
             style={{

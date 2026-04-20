@@ -13,40 +13,43 @@ import Settings from './pages/Settings';
 import Notes from './pages/Notes';
 import NoteForm from './pages/NoteForm';
 import NoteDetail from './pages/NoteDetail';
+import InsightsPage from './pages/InsightsPage';
 import Landing from './pages/Landing';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes - With Sidebar Layout */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <Dashboard />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/clients" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <Clients />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/clients/:id" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <ClientDetail />
-            </DashboardLayout>
-          </ProtectedRoute>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes - With Sidebar Layout */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/clients" element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Clients />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/clients/:id" element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientDetail />
+              </DashboardLayout>
+            </ProtectedRoute>
         } />
         <Route path="/cases" element={
           <ProtectedRoute>
@@ -118,8 +121,16 @@ function App() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
+        <Route path="/insights" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <InsightsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
