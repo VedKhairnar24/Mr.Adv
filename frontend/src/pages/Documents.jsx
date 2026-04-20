@@ -55,10 +55,12 @@ function Documents() {
   const [caseId, setCaseId] = useState("");
   const [cases, setCases] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [allDocuments, setAllDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [viewMode, setViewMode] = useState("case"); // "case" or "all"
   const fileInputRef = useRef(null);
 
   const fetchCases = async () => {
@@ -86,12 +88,32 @@ function Documents() {
     }
   };
 
+  const fetchAllDocuments = async () => {
+    try {
+      const res = await API.get("/documents/all/advocate");
+      setAllDocuments(res.data || []);
+    } catch (err) {
+      setAllDocuments([]);
+    }
+  };
+
   useEffect(() => {
     fetchCases();
+    fetchAllDocuments();
   }, []);
 
   useEffect(() => {
     if (caseId) fetchDocuments();
+  }, [caseId]);
+
+  useEffect(() => {
+    // Listen for document upload events to refresh
+    const handleRefresh = () => {
+      fetchDocuments();
+      fetchAllDocuments();
+    };
+    window.addEventListener("documentUploaded", handleRefresh);
+    return () => window.removeEventListener("documentUploaded", handleRefresh);
   }, [caseId]);
 
   const validateAndSetFile = (selectedFile) => {
@@ -100,10 +122,11 @@ function Documents() {
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
     ];
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      setError("Only PDF and Word documents (.pdf, .doc, .docx) are allowed");
+      setError("Only PDF, Word documents (.pdf, .doc, .docx), and text files (.txt) are allowed");
       setFile(null);
       return;
     }
@@ -145,13 +168,14 @@ function Documents() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("case_id", caseId);
-      await API.post("/documents/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await API.post("/documents/upload", formData);
       setSuccess("Document uploaded successfully!");
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchDocuments();
+      fetchAllDocuments();
+      // Dispatch event to notify other components of document upload
+      window.dispatchEvent(new Event("documentUploaded"));
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to upload document");
@@ -166,6 +190,7 @@ function Documents() {
       await API.delete(`/documents/${docId}`);
       setSuccess("Document deleted successfully!");
       fetchDocuments();
+      fetchAllDocuments();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete document");
@@ -252,7 +277,7 @@ function Documents() {
                   ref={fileInputRef}
                   type="file"
                   onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                   style={{ display: "none" }}
                   id="document-file-input"
                 />
@@ -302,7 +327,7 @@ function Documents() {
                     <span style={{ color: "var(--gold)" }}>Click to upload</span> or drag & drop
                   </p>
                   <p style={{ marginTop: "8px", marginBottom: "16px", fontFamily: "Rajdhani, sans-serif", fontSize: "13px", color: "var(--muted)" }}>
-                    PDF, DOC, DOCX (Max 10MB)
+                    PDF, DOC, DOCX, TXT (Max 10MB)
                   </p>
 
                   <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
@@ -310,6 +335,7 @@ function Documents() {
                       "PDF",
                       "DOC",
                       "DOCX",
+                      "TXT",
                     ].map((chip) => (
                       <span
                         key={chip}
@@ -346,26 +372,94 @@ function Documents() {
           </section>
 
           <section className="card" style={{ borderRadius: "4px", minHeight: "480px", padding: "24px" }}>
-            <div className="flex-between" style={{ marginBottom: "16px" }}>
-              <p className="label text-gold" style={{ letterSpacing: "3px" }}>Documents For This Case</p>
-              <p className="label text-muted" style={{ letterSpacing: "3px" }}>{documents.length} Documents</p>
+            <div className="flex-between" style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <p className="label text-gold" style={{ letterSpacing: "3px", marginBottom: "8px" }}>
+                  {viewMode === "case" ? "Documents For This Case" : "All Documents"}
+                </p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={() => setViewMode("case")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "3px",
+                      border: viewMode === "case" ? "2px solid var(--gold)" : "1px solid var(--border)",
+                      background: viewMode === "case" ? "rgba(200,168,75,0.1)" : "transparent",
+                      color: viewMode === "case" ? "var(--gold)" : "var(--muted)",
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      fontFamily: "Rajdhani, sans-serif",
+                      fontWeight: 600,
+                      letterSpacing: "1.5px",
+                      textTransform: "uppercase",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== "case") {
+                        e.currentTarget.style.borderColor = "rgba(200,168,75,0.35)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== "case") {
+                        e.currentTarget.style.borderColor = "var(--border)";
+                      }
+                    }}
+                  >
+                    Per Case
+                  </button>
+                  <button
+                    onClick={() => setViewMode("all")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "3px",
+                      border: viewMode === "all" ? "2px solid var(--gold)" : "1px solid var(--border)",
+                      background: viewMode === "all" ? "rgba(200,168,75,0.1)" : "transparent",
+                      color: viewMode === "all" ? "var(--gold)" : "var(--muted)",
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      fontFamily: "Rajdhani, sans-serif",
+                      fontWeight: 600,
+                      letterSpacing: "1.5px",
+                      textTransform: "uppercase",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== "all") {
+                        e.currentTarget.style.borderColor = "rgba(200,168,75,0.35)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== "all") {
+                        e.currentTarget.style.borderColor = "var(--border)";
+                      }
+                    }}
+                  >
+                    All Documents
+                  </button>
+                </div>
+              </div>
+              <p className="label text-muted" style={{ letterSpacing: "3px" }}>
+                {viewMode === "case" ? documents.length : allDocuments.length} Documents
+              </p>
             </div>
 
             {loading ? (
               <div className="empty-state" style={{ minHeight: "220px" }}>
                 <div className="inline-block animate-spin rounded-full h-8 w-8" style={{ border: "2px solid var(--gold)", borderTopColor: "transparent" }}></div>
               </div>
-            ) : documents.length === 0 ? (
+            ) : (viewMode === "case" ? documents.length === 0 : allDocuments.length === 0) ? (
               <div className="empty-state" style={{ minHeight: "220px" }}>
                 <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--gold-dim)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", marginBottom: "12px" }}>
                   <span style={{ width: "20px", height: "20px" }}><FileIcon /></span>
                 </div>
                 <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "18px", color: "var(--white)" }}>No documents uploaded yet</p>
-                <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)" }}>Upload documents to see them here</p>
+                <p style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "12px", color: "var(--muted)" }}>
+                  {viewMode === "case" ? "Upload documents to see them here" : "Create cases and upload documents to see them here"}
+                </p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {documents.map((doc) => {
+                {(viewMode === "case" ? documents : allDocuments).map((doc) => {
                   const theme = getFileTheme(doc.file_type || doc.document_name || "");
                   return (
                     <article
@@ -400,6 +494,9 @@ function Documents() {
                         </p>
                         <p style={{ marginTop: "2px", fontFamily: "Rajdhani, sans-serif", fontSize: "11px", color: "var(--muted)" }}>
                           Uploaded: {new Date(doc.uploaded_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} · {formatFileSize(doc.file_size)}
+                          {viewMode === "all" && doc.case_title && (
+                            <span> · Case: <span style={{ color: "var(--gold)" }}>{doc.case_title}</span></span>
+                          )}
                         </p>
                       </div>
 

@@ -1,11 +1,13 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 // Allowed MIME types for security
 const allowedDocTypes = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
   'image/jpeg',
   'image/png',
   'image/jpg'
@@ -14,6 +16,19 @@ const allowedEvidenceTypes = ['image/jpeg', 'image/png', 'image/jpg', 'video/mp4
 
 // File size limit (10MB max for production)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Create upload directories if they don't exist
+const ensureUploadDirsExist = () => {
+  const dirs = ['uploads', 'uploads/documents', 'uploads/evidence'];
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
+};
+
+// Ensure directories exist before starting
+ensureUploadDirsExist();
 
 // Configure storage for uploaded files
 const storage = multer.diskStorage({
@@ -55,7 +70,7 @@ const fileFilter = (req, file, cb) => {
     if (allowedDocTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF, Word documents (.pdf, .doc, .docx) and images (.jpg, .png) are allowed'), false);
+      cb(new Error('Only PDF, Word documents (.pdf, .doc, .docx), text files (.txt) and images (.jpg, .png) are allowed'), false);
     }
   } else {
     if (allowedEvidenceTypes.includes(file.mimetype)) {

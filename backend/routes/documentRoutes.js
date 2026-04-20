@@ -18,6 +18,13 @@ router.post(
 );
 
 /**
+ * @route   GET /api/documents/all/advocate
+ * @desc    Get all documents for advocate across all cases (Protected route)
+ * @access  Private (Requires JWT token)
+ */
+router.get('/all/advocate', verifyToken, documentController.getAllDocuments);
+
+/**
  * @route   GET /api/documents/case/:caseId
  * @desc    Get all documents for a case (Protected route)
  * @access  Private (Requires JWT token)

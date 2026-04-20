@@ -180,3 +180,30 @@ exports.deleteDocument = (req, res) => {
     });
   });
 };
+
+/**
+ * Get all documents for the advocate across all cases (Global)
+ * GET /api/documents/all/advocate
+ */
+exports.getAllDocuments = (req, res) => {
+  // Fetch all documents for cases belonging to this advocate
+  const sql = `
+    SELECT d.*, c.case_title, c.client_name, c.case_number
+    FROM documents d
+    INNER JOIN cases c ON d.case_id = c.id
+    WHERE c.advocate_id = ?
+    ORDER BY d.uploaded_at DESC
+  `;
+
+  db.query(sql, [req.advocateId], (err, result) => {
+    if (err) {
+      console.error('Get all documents error:', err);
+      return res.status(500).json({ 
+        message: 'Error fetching documents',
+        error: err.message 
+      });
+    }
+
+    res.json(result || []);
+  });
+};
