@@ -4,16 +4,19 @@ import toast from "react-hot-toast";
 
 export default function AINotes({ caseId }) {
   const [notes, setNotes] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [notesText, setNotesText] = useState("");
   const [mainPointsText, setMainPointsText] = useState("");
   const [includeCaseNotes, setIncludeCaseNotes] = useState(true);
+  const [selectedDocuments, setSelectedDocuments] = useState([]);
   const [savedCaseNotesCount, setSavedCaseNotesCount] = useState(0);
 
   useEffect(() => {
     fetchNotes();
+    fetchDocuments();
     fetchSavedCaseNotesCount();
   }, [caseId]);
 
@@ -30,6 +33,22 @@ export default function AINotes({ caseId }) {
     }
   };
 
+  const fetchDocuments = async () => {
+    try {
+      const res = await API.get(`/documents/${caseId}`);
+      const docs = Array.isArray(res.data) ? res.data : [];
+      console.log("Fetched documents:", docs); // Debug log
+      setDocuments(docs);
+      // Auto-select all documents when they're loaded
+      if (docs.length > 0) {
+        setSelectedDocuments(docs.map(d => d.id));
+      }
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      setDocuments([]);
+    }
+  };
+
   const fetchSavedCaseNotesCount = async () => {
     try {
       const res = await API.get(`/notes/${caseId}`);
@@ -39,6 +58,12 @@ export default function AINotes({ caseId }) {
     }
   };
 
+  const toggleDocument = (docId) => {
+    setSelectedDocuments((prev) =>
+      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+    );
+  };
+
   const generateInsights = async () => {
     try {
       const mainPoints = mainPointsText
@@ -46,17 +71,20 @@ export default function AINotes({ caseId }) {
         .map((point) => point.trim())
         .filter(Boolean);
 
-      if (!notesText.trim() && mainPoints.length === 0 && !includeCaseNotes) {
-        toast.error("Add notes or main points to generate AI analysis");
+      if (!notesText.trim() && mainPoints.length === 0 && !includeCaseNotes && selectedDocuments.length === 0) {
+        toast.error("Please add at least: notes, main points, documents, or enable saved case notes");
         return;
       }
 
       setGenerating(true);
-      const res = await API.post(`/ai/generate/${caseId}`, {
+      const payload = {
         notesText,
         mainPoints,
         includeCaseNotes,
-      });
+        documentIds: selectedDocuments.length > 0 ? selectedDocuments : undefined,
+      };
+      console.log("Sending AI request with:", payload);
+      const res = await API.post(`/ai/generate/${caseId}`, payload);
       toast.success("AI insights generated!");
       setNotes((prev) => [
         {
@@ -155,20 +183,20 @@ export default function AINotes({ caseId }) {
           background: "rgba(15, 23, 42, 0.35)",
         }}
       >
-        <h3 className="detail-card-label" style={{ marginBottom: "12px" }}>Notes and Main Points for AI</h3>
+        <h3 className="detail-card-label" style={{ marginBottom: "12px" }}>AI Analysis Inputs (Optional)</h3>
         <p className="text-xs text-slate-400" style={{ marginBottom: "12px" }}>
-          Add your notes and key points. AI will analyze this content and generate a legal summary, relevant laws and sections, and practical next steps.
+          Provide at least one source: notes, main points, documents, or saved case notes. AI will analyze and generate a legal summary, relevant laws, and practical next steps.
         </p>
 
         <div style={{ display: "grid", gap: "10px" }}>
           <div>
             <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
-              Detailed Notes
+              Detailed Notes (Optional)
             </label>
             <textarea
               value={notesText}
               onChange={(e) => setNotesText(e.target.value)}
-              placeholder="Add factual background, incident details, statements, dates, and procedural context..."
+              placeholder="Optional: Add factual background, incident details, statements, dates, and procedural context..."
               rows={5}
               style={{ width: "100%", resize: "vertical", minHeight: "110px" }}
               className="detail-select"
@@ -177,12 +205,12 @@ export default function AINotes({ caseId }) {
 
           <div>
             <label className="detail-field-label" style={{ display: "block", marginBottom: "6px" }}>
-              Main Points (one point per line)
+              Main Points (Optional)
             </label>
             <textarea
               value={mainPointsText}
               onChange={(e) => setMainPointsText(e.target.value)}
-              placeholder="Example:\nComplainant alleges breach of contract on 12 Jan 2026\nNotice served but no response received"
+              placeholder="Optional - Example:\nComplainant alleges breach of contract on 12 Jan 2026\nNotice served but no response received"
               rows={4}
               style={{ width: "100%", resize: "vertical", minHeight: "90px" }}
               className="detail-select"
@@ -197,6 +225,26 @@ export default function AINotes({ caseId }) {
             />
             Include saved case notes from system ({savedCaseNotesCount})
           </label>
+
+          {documents.length > 0 && (
+            <div style={{ padding: "10px", background: "rgba(200, 168, 75, 0.05)", borderRadius: "4px", border: "1px solid rgba(200, 168, 75, 0.15)" }}>
+              <label className="text-xs text-slate-300" style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+                📄 Include Documents in Analysis ({selectedDocuments.length}/{documents.length})
+              </label>
+              <div style={{ display: "grid", gap: "6px" }}>
+                {documents.map((doc) => (
+                  <label key={doc.id} className="text-xs text-slate-400" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedDocuments.includes(doc.id)}
+                      onChange={() => toggleDocument(doc.id)}
+                    />
+                    <span title={doc.document_name}>{doc.document_name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -207,6 +255,12 @@ export default function AINotes({ caseId }) {
           </svg>
           <h2 className="detail-card-label" style={{ marginBottom: 0 }}>AI Legal Analysis</h2>
         </div>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
+          {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)" }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''}</span>}
+          {notesText.trim() && <span style={{ color: "var(--gold)" }}>✓ Notes</span>}
+          {mainPointsText.split("\n").filter(p => p.trim()).length > 0 && <span style={{ color: "var(--gold)" }}>✓ Points</span>}
+        </div>
+      </div>
         <button
           onClick={generateInsights}
           disabled={generating}
@@ -228,26 +282,6 @@ export default function AINotes({ caseId }) {
           )}
         </button>
       </div>
-
-      {/* Loading state */}
-      {loading && (
-        <div className="flex items-center justify-center py-10">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gold border-t-transparent"></div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && notes.length === 0 && (
-        <div
-          style={{
-            border: "1px dashed rgba(200, 168, 75, 0.25)",
-            borderRadius: "3px",
-            padding: "20px",
-            minHeight: "80px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
             textAlign: "center",
           }}
         >

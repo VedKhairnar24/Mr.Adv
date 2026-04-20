@@ -1,24 +1,57 @@
 const OpenAI = require('openai');
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
+const pdfParse = require('pdf-parse');
+
+// Helper: Extract text from document files
+async function extractDocumentText(filePath) {
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+    const fullPath = path.resolve(filePath);
+
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+
+    if (ext === '.pdf') {
+      const dataBuffer = fs.readFileSync(fullPath);
+      const pdfData = await pdfParse(dataBuffer);
+      return pdfData.text.substring(0, 3000); // Limit to 3000 chars to preserve tokens
+    } else if (ext === '.txt') {
+      const text = fs.readFileSync(fullPath, 'utf-8');
+      return text.substring(0, 3000);
+    } else if (ext === '.doc' || ext === '.docx') {
+      // Basic support - read as text if possible
+      // For full DOCX support, would need docx library
+      const text = fs.readFileSync(fullPath, 'utf-8').split('\0').join('');
+      return text.substring(0, 3000);
+    }
+  } catch (error) {
+    console.error('Error extracting document text:', error.message);
+    return null;
+  }
+}
 
 // System prompt for legal AI assistant
-const SYSTEM_PROMPT = `You are an AI Legal Assistant designed to support advocates by analyzing case notes and extracting practical legal guidance.
+const SYSTEM_PROMPT = `You are an AI Legal Assistant designed to support advocates by analyzing case notes, documents, and extracting practical legal guidance.
 
-Your role is to analyze advocate-provided notes and key points, then generate a clear and actionable legal analysis.
+Your role is to analyze advocate-provided notes, key points, and attached case documents, then generate a clear and actionable legal analysis.
 
 You must follow these principles:
 
-1. Accuracy — Use only the facts present in the notes and key points. Do not invent facts.
-2. Legal Awareness — Identify relevant Indian legal frameworks such as IPC, BNS, CrPC, BNSS, CPC, Indian Evidence Act, and BSA where applicable.
-3. Professional Structure — Your output must always be clearly structured using headings and bullet points.
-4. Advocate Control — The AI output is a legal drafting aid. The advocate will review and edit the output.
-5. Confidentiality Awareness — Assume all case data is confidential and should be handled with legal sensitivity.
+1. Accuracy — Use only the facts present in the notes, key points, and documents. Do not invent facts.
+2. Document Analysis — When case documents are provided, extract key information, legal language, and factual details.
+3. Legal Awareness — Identify relevant Indian legal frameworks such as IPC, BNS, CrPC, BNSS, CPC, Indian Evidence Act, and BSA where applicable.
+4. Professional Structure — Your output must always be clearly structured using headings and bullet points.
+5. Advocate Control — The AI output is a legal drafting aid. The advocate will review and edit the output.
+6. Confidentiality Awareness — Assume all case data is confidential and should be handled with legal sensitivity.
 
 Your response must always generate the following sections:
 
 1. CASE SUMMARY — Short and clear summary explaining the main issue and situation.
-2. MAIN FACTS AND KEY POINTS — Consolidated bullet points from notes.
-3. CASE CHRONOLOGY — Timeline of events inferred from the notes.
+2. MAIN FACTS AND KEY POINTS — Consolidated bullet points from notes and documents.
+3. CASE CHRONOLOGY — Timeline of events inferred from the notes and documents.
 4. LEGAL ISSUES IDENTIFIED — Core legal questions in dispute.
 5. RELEVANT LAWS AND SECTIONS — Possible Acts and section-level references with short reason.
 6. ARGUMENT DIRECTIONS — Possible arguments for both sides where relevant.
@@ -32,7 +65,7 @@ Your response must always generate the following sections:
 exports.generateInsights = async (req, res) => {
   const { caseId } = req.params;
   const advocateId = req.advocateId;
-  const { notesText, mainPoints, includeCaseNotes } = req.body || {};
+  const { notesText, mainPoints, includeCaseNotes, documentIds } = req.body || {};
 
   try {
     // Verify API key is configured
@@ -77,9 +110,33 @@ exports.generateInsights = async (req, res) => {
       ? savedNotes.map((n) => `- ${n.note_text}`).join('\n')
       : 'No saved case notes included.';
 
-    if (!normalizedNotesText && normalizedMainPoints.length === 0 && savedNotes.length === 0) {
+    // 4. Extract text from documents if provided
+    let documentContent = '';
+    if (Array.isArray(documentIds) && documentIds.length > 0) {
+      try {
+        const documents = await queryPromise(
+          `SELECT id, document_name, file_path FROM documents 
+           WHERE id IN (${documentIds.map(() => '?').join(',')}) 
+           AND case_id = ? 
+           LIMIT 10`,
+          [...documentIds, caseId]
+        );
+
+        for (const doc of documents) {
+          const text = await extractDocumentText(doc.file_path);
+          if (text) {
+            documentContent += `\n\n--- Document: ${doc.document_name} ---\n${text}`;
+          }
+        }
+      } catch (error) {
+        console.error('Error processing documents:', error.message);
+        // Continue even if document processing fails
+      }
+    }
+
+    if (!normalizedNotesText && normalizedMainPoints.length === 0 && savedNotes.length === 0 && !documentContent) {
       return res.status(400).json({
-        message: 'Please add notes or main points before generating AI analysis.'
+        message: 'Please provide at least one source: notes, main points, documents, or enable saved case notes for AI analysis.'
       });
     }
 
@@ -90,6 +147,7 @@ Case Title: ${caseInfo.case_title}
 Case Number: ${caseInfo.case_number || 'N/A'}
 Case Type: ${caseInfo.case_type || 'N/A'}
 Court: ${caseInfo.court_name || 'N/A'}
+Client: ${caseInfo.client_name || 'N/A'}
 Status: ${caseInfo.status}
 Filing Date: ${caseInfo.filing_date ? new Date(caseInfo.filing_date).toLocaleDateString('en-IN') : 'N/A'}
 
@@ -101,6 +159,9 @@ ${normalizedMainPoints.length > 0 ? normalizedMainPoints.map((point) => `- ${poi
 
 SAVED CASE NOTES (DATABASE)
 ${savedNotesSummary}
+
+ATTACHED DOCUMENTS CONTENT
+${documentContent || 'No documents provided.'}
 
 Based on the above information, generate a comprehensive analysis with:
 1. CASE SUMMARY
