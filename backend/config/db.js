@@ -1,7 +1,8 @@
 const mysql = require('mysql2');
+const mysqlPromise = require('mysql2/promise');
 require('dotenv').config();
 
-// Create database connection
+// Create database connection (callback style)
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -20,4 +21,16 @@ db.connect((err) => {
   }
 });
 
+// Create promise-based connection pool for async/await support
+const dbPromise = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: 'advocate_case_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+}).promise();
+
 module.exports = db;
+module.exports.promise = dbPromise;

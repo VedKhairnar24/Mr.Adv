@@ -39,6 +39,12 @@ const courtRoutes = require('./routes/courtRoutes');
 // Import settings routes
 const settingsRoutes = require('./routes/settingsRoutes');
 
+// Import insights routes
+const insightsRoutes = require('./routes/insightsRoutes');
+
+// Import test routes
+const testRoutes = require('./routes/testRoutes');
+
 // Import error handler middleware
 const errorHandler = require('./middleware/errorMiddleware');
 
@@ -65,6 +71,8 @@ app.use('/api/dashboard', dashboardRoutes); // Dashboard statistics routes
 app.use('/api/ai', aiRoutes); // AI legal assistant routes
 app.use('/api/courts', courtRoutes); // Court management routes
 app.use('/api/settings', settingsRoutes); // Settings routes
+app.use('/api/insights', insightsRoutes); // Dashboard insights with AI analysis routes
+app.use('/api/test', testRoutes); // Test endpoints for debugging
 
 // Basic route test
 app.get('/', (req, res) => {

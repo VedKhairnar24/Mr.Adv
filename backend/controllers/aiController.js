@@ -1,73 +1,9 @@
-const OpenAI = require('openai');
+const { generateInsight, analyzeDocumentOnly, generateRealDocumentInsights } = require('../services/aiService');
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
-
-// Helper: Make OpenAI API call with fallback to backup key
-async function callOpenAIWithFallback(messages, options = {}) {
-  const primaryKey = process.env.OPENAI_API_KEY;
-  const backupKey = process.env.OPENAI_API_KEY_BACKUP;
-
-  if (!primaryKey) {
-    throw new Error('OpenAI API key not configured. Add OPENAI_API_KEY to your .env file.');
-  }
-
-  // Try primary key first
-  try {
-    console.log('🔄 Attempting AI request with primary API key');
-    const openai = new OpenAI({ apiKey: primaryKey });
-    const completion = await openai.chat.completions.create({
-      messages,
-      temperature: 0.3,
-      max_tokens: 2200,
-      ...options,
-    });
-    console.log('✓ Successfully used primary API key');
-    return { completion, keyUsed: 'primary' };
-  } catch (error) {
-    console.error('❌ Primary API key error:', {
-      status: error.status,
-      code: error.code,
-      message: error.message,
-      type: error.type,
-    });
-
-    // Check if it's a quota/billing error
-    const isQuotaError = error.status === 402 || 
-                         error.code === 'insufficient_quota' || 
-                         error.code === 'billing_quota_exceeded' ||
-                         error.message?.includes('quota') ||
-                         error.message?.includes('billing') ||
-                         error.message?.includes('insufficient');
-
-    if (isQuotaError && backupKey) {
-      console.warn('⚠️ Primary API key quota exceeded, attempting backup key...');
-      try {
-        const openai = new OpenAI({ apiKey: backupKey });
-        const completion = await openai.chat.completions.create({
-          messages,
-          temperature: 0.3,
-          max_tokens: 2200,
-          ...options,
-        });
-        console.log('✓ Successfully used backup API key');
-        return { completion, keyUsed: 'backup' };
-      } catch (backupError) {
-        console.error('❌ Backup API key also failed:', {
-          status: backupError.status,
-          code: backupError.code,
-          message: backupError.message,
-        });
-        throw new Error('Both primary and backup API keys failed. ' + backupError.message);
-      }
-    }
-    
-    // If not a quota error or no backup key, throw original error
-    console.error('🚨 Throwing error - not quota related or no backup key');
-    throw error;
-  }
-}
+const { chunkText, cleanText } = require('../utils/chunkText');
 
 // Helper: Extract text from document files
 async function extractDocumentText(filePath) {
@@ -82,13 +18,11 @@ async function extractDocumentText(filePath) {
     if (ext === '.pdf') {
       const dataBuffer = fs.readFileSync(fullPath);
       const pdfData = await pdfParse(dataBuffer);
-      return pdfData.text.substring(0, 3000); // Limit to 3000 chars to preserve tokens
+      return pdfData.text.substring(0, 3000); // Limit to 3000 chars
     } else if (ext === '.txt') {
       const text = fs.readFileSync(fullPath, 'utf-8');
       return text.substring(0, 3000);
     } else if (ext === '.doc' || ext === '.docx') {
-      // Basic support - read as text if possible
-      // For full DOCX support, would need docx library
       const text = fs.readFileSync(fullPath, 'utf-8').split('\0').join('');
       return text.substring(0, 3000);
     }
@@ -133,10 +67,15 @@ exports.generateInsights = async (req, res) => {
   const { notesText, mainPoints, includeCaseNotes, documentIds } = req.body || {};
 
   try {
-    // Verify API keys are configured
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ message: 'OpenAI API key not configured. Add OPENAI_API_KEY to your .env file.' });
-    }
+    // Helper function for database queries
+    const queryPromise = (query, values = []) => {
+      return new Promise((resolve, reject) => {
+        db.query(query, values, (error, results) => {
+          if (error) reject(error);
+          else resolve(results);
+        });
+      });
+    };
 
     // 1. Fetch case details (with ownership check)
     const caseData = await queryPromise(
@@ -195,7 +134,6 @@ exports.generateInsights = async (req, res) => {
         }
       } catch (error) {
         console.error('Error processing documents:', error.message);
-        // Continue even if document processing fails
       }
     }
 
@@ -205,7 +143,31 @@ exports.generateInsights = async (req, res) => {
       });
     }
 
-    const userPrompt = `Analyze the following legal case notes and generate structured insights.
+    // 5. Determine analysis type: Use REAL document insights if documents provided, else generic analysis
+    console.log('🤖 Calling AI service with Hugging Face...');
+    
+    let aiResponse;
+    
+    // If documents are provided, use REAL document insights (extract actual facts, structured format)
+    if (documentContent && documentContent.trim().length > 0) {
+      console.log('📄 Using REAL document-based insights (actual extraction, structured output)...');
+      
+      // Extract just the document text for analysis (not mixed with other inputs)
+      const cleanedDocumentContent = cleanText(documentContent);
+      
+      // Use the new real document insights generator for better structured output
+      aiResponse = await generateRealDocumentInsights(cleanedDocumentContent, {
+        temperature: 0.2, // Lower temperature for factual output
+        maxTokens: 2500,
+        timeout: 20000,
+      });
+      
+      console.log(`✅ Real document insights complete - Structured format with bullet points and summary`);
+    } else {
+      // If NO documents, use generic insight generation from notes
+      console.log('📝 Using generic analysis from notes/main points...');
+      
+      const userPrompt = `Analyze the following legal case notes and generate structured insights.
 
 CASE INFORMATION
 Case Title: ${caseInfo.case_title}
@@ -225,9 +187,6 @@ ${normalizedMainPoints.length > 0 ? normalizedMainPoints.map((point) => `- ${poi
 SAVED CASE NOTES (DATABASE)
 ${savedNotesSummary}
 
-ATTACHED DOCUMENTS CONTENT
-${documentContent || 'No documents provided.'}
-
 Based on the above information, generate a comprehensive analysis with:
 1. CASE SUMMARY
 2. MAIN FACTS AND KEY POINTS
@@ -238,67 +197,52 @@ Based on the above information, generate a comprehensive analysis with:
 7. EVIDENCE GAPS
 8. ACTION PLAN FOR ADVOCATE`;
 
-    // 5. Call OpenAI API with fallback support
-    const { completion, keyUsed } = await callOpenAIWithFallback([
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ], { model: 'gpt-4.1-mini' });
+      aiResponse = await generateInsight([
+        { role: 'system', content: 'You are an AI Legal Assistant designed to support advocates by analyzing case notes and providing actionable legal guidance.' },
+        { role: 'user', content: userPrompt },
+      ], {
+        temperature: 0.3,
+        maxTokens: 2500,
+        timeout: 20000,
+      });
+      
+      console.log(`✅ Generic analysis generated via ${aiResponse.provider}`);
+    }
 
-    const aiContent = completion.choices[0].message.content;
-    const tokensUsed = completion.usage?.total_tokens || 0;
-    const modelUsed = completion.model || 'gpt-4.1-mini';
+    const aiContent = aiResponse.insight;
+    const provider = aiResponse.provider;
+    const status = aiResponse.status;
+    const analysisType = documentContent ? 'real_document_insights' : 'generic_analysis';
 
-    console.log(`AI Analysis generated using ${keyUsed} API key - Tokens: ${tokensUsed}`);
+    console.log(`✅ AI Analysis generated via ${provider} (${status})`);
 
     // 6. Save to database
     const insertResult = await queryPromise(
       'INSERT INTO ai_notes (case_id, note_type, content, model_used, tokens_used) VALUES (?, ?, ?, ?, ?)',
-      [caseId, 'full_analysis', aiContent, modelUsed, tokensUsed]
+      [caseId, analysisType, aiContent, provider, aiResponse.tokensUsed || 0]
     );
 
     res.json({
       message: 'AI insights generated successfully',
       id: insertResult.insertId,
       content: aiContent,
-      model_used: modelUsed,
-      tokens_used: tokensUsed,
-      api_key_used: keyUsed,
+      model_used: provider,
+      tokens_used: aiResponse.tokensUsed || 0,
+      api_status: status,
+      analysis_type: analysisType,
+      is_document_based: documentContent ? true : false,
       created_at: new Date().toISOString(),
     });
 
   } catch (error) {
     console.error('🚨 AI generation error:', {
       message: error.message,
-      status: error.status,
-      code: error.code,
-      type: error.type,
       stack: error.stack,
     });
 
-    // Handle API key errors
-    if (error.status === 401 || error.code === 'invalid_api_key' || error.message?.includes('invalid_api_key')) {
-      return res.status(401).json({ message: 'Invalid OpenAI API key. Check your .env file.' });
-    }
-    
-    // Handle rate limit errors
-    if (error.status === 429 || error.code === 'rate_limit_exceeded') {
-      return res.status(429).json({ message: 'OpenAI rate limit exceeded. Please try again later.' });
-    }
-    
-    // Handle quota errors
-    if (error.status === 402 || 
-        error.code === 'insufficient_quota' || 
-        error.code === 'billing_quota_exceeded' ||
-        error.message?.includes('quota') ||
-        error.message?.includes('billing')) {
-      return res.status(402).json({ message: 'Both primary and backup OpenAI API keys have reached quota limits. Please check your OpenAI account.' });
-    }
-
-    // Generic error
     res.status(500).json({ 
       message: 'Failed to generate AI insights', 
       error: error.message,
-      code: error.code 
     });
   }
 };
