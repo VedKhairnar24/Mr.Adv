@@ -112,55 +112,7 @@ Advocates often face the following problems:
 - MySQL
 
 ### AI Integration
-- Hugging Face Inference API
-- Document-based analysis with smart fallback extraction
-
----
-
-## 🤖 AI System Setup
-
-### Hugging Face Configuration
-
-1. **Get API Token:**
-   - Create account at https://huggingface.co
-   - Generate API token from https://huggingface.co/settings/tokens
-   - Token must have "Inference" API access
-
-2. **Update Backend Configuration:**
-   ```bash
-   cd backend
-   # Edit .env file:
-   HUGGINGFACE_API_KEY=your_token_here
-   ```
-
-3. **Verify Integration:**
-   ```bash
-   node test-hf-integration.js  # Test API connection
-   ```
-
-### AI Features
-
-- **Document Analysis:** Upload documents and AI generates structured insights
-- **Smart Extraction:** If API fails, falls back to intelligent regex-based extraction
-- **Output Format:** 
-  - **DETAILED INSIGHTS:** Bullet points with specific facts from document
-  - **ANALYTICAL SUMMARY:** Professional paragraph with strategic considerations
-
-### Troubleshooting AI Issues
-
-**Problem:** Getting 404 errors on Hugging Face API
-- **Solution:** Verify token is valid and has Inference API permissions
-
-**Problem:** Generic responses instead of real analysis  
-- **Solution:** Ensure documents are uploaded and contain legal content
-
-**Problem:** API timeouts
-- **Solution:** Check backend logs, verify internet connection, increase timeout in backend/services/huggingfaceService.js
-
-**Alternative: Use Ollama Locally** (no external API needed)
-- Install: https://ollama.ai
-- Run model: `ollama run mistral`
-- Then configure backend to use `http://localhost:11434`
+- OpenAI API
 
 ---
 

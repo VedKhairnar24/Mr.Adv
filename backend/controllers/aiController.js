@@ -144,7 +144,7 @@ exports.generateInsights = async (req, res) => {
     }
 
     // 5. Determine analysis type: Use REAL document insights if documents provided, else generic analysis
-    console.log('🤖 Calling AI service via OpenRouter...');
+    console.log('🤖 Calling AI service with Hugging Face...');
     
     let aiResponse;
     
@@ -240,9 +240,9 @@ Based on the above information, generate a comprehensive analysis with:
       stack: error.stack,
     });
 
-    res.status(503).json({ 
-      message: 'Insights temporarily unavailable. Please retry.', 
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Service temporarily unavailable',
+    res.status(500).json({ 
+      message: 'Failed to generate AI insights', 
+      error: error.message,
     });
   }
 };

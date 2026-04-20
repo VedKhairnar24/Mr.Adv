@@ -2,17 +2,13 @@ import { useMemo, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import API from '../services/api';
-import ThemeToggle from '../components/ThemeToggle';
 import '../styles/auth.css';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function LayeredLogoIcon() {
-  const isDarkMode = !document.documentElement.classList.contains('light-theme');
-  const strokeColor = isDarkMode ? '#f0ebe0' : '#2a2620';
-  
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" stroke={strokeColor} strokeWidth="1.5" fill="none">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 3L2 8l10 5 10-5-10-5z" />
       <path d="M2 17l10 5 10-5" />
       <path d="M2 12l10 5 10-5" />
@@ -21,23 +17,19 @@ function LayeredLogoIcon() {
 }
 
 function ScalesOfJustice() {
-  const isDarkMode = !document.documentElement.classList.contains('light-theme');
-  const goldColor = isDarkMode ? '#c8a84b' : '#b8920f';
-  const bgColor = isDarkMode ? '#0d1a17' : '#fafaf7';
-  
   return (
     <svg viewBox="0 0 200 200" aria-hidden="true">
-      <rect x="97" y="60" width="6" height="110" fill={goldColor} rx="2" />
-      <rect x="72" y="167" width="56" height="8" fill={goldColor} rx="2" />
-      <rect x="30" y="78" width="140" height="5" fill={goldColor} rx="2" />
-      <circle cx="100" cy="80" r="16" fill={bgColor} stroke={goldColor} strokeWidth="2" />
-      <circle cx="100" cy="80" r="9" fill={goldColor} opacity="0.9" />
-      <line x1="54" y1="83" x2="45" y2="123" stroke={goldColor} strokeWidth="2" />
-      <line x1="70" y1="83" x2="54" y2="123" stroke={goldColor} strokeWidth="2" />
-      <ellipse cx="39" cy="130" rx="24" ry="7" fill={goldColor} />
-      <line x1="130" y1="83" x2="152" y2="110" stroke={goldColor} strokeWidth="2" />
-      <line x1="146" y1="83" x2="162" y2="110" stroke={goldColor} strokeWidth="2" />
-      <ellipse cx="161" cy="116" rx="20" ry="6" fill={goldColor} />
+      <rect x="97" y="60" width="6" height="110" fill="#c8a84b" rx="2" />
+      <rect x="72" y="167" width="56" height="8" fill="#c8a84b" rx="2" />
+      <rect x="30" y="78" width="140" height="5" fill="#c8a84b" rx="2" />
+      <circle cx="100" cy="80" r="16" fill="#0d1a17" stroke="#c8a84b" strokeWidth="2" />
+      <circle cx="100" cy="80" r="9" fill="#c8a84b" opacity="0.9" />
+      <line x1="54" y1="83" x2="45" y2="123" stroke="#c8a84b" strokeWidth="2" />
+      <line x1="70" y1="83" x2="54" y2="123" stroke="#c8a84b" strokeWidth="2" />
+      <ellipse cx="39" cy="130" rx="24" ry="7" fill="#c8a84b" />
+      <line x1="130" y1="83" x2="152" y2="110" stroke="#c8a84b" strokeWidth="2" />
+      <line x1="146" y1="83" x2="162" y2="110" stroke="#c8a84b" strokeWidth="2" />
+      <ellipse cx="161" cy="116" rx="20" ry="6" fill="#c8a84b" />
     </svg>
   );
 }
@@ -155,10 +147,6 @@ function Login() {
       <div className="auth-blob auth-blob-1" aria-hidden="true" />
       <div className="auth-blob auth-blob-2" aria-hidden="true" />
       <div className="auth-noise" aria-hidden="true" />
-      
-      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 100 }}>
-        <ThemeToggle />
-      </div>
 
       <section className="auth-left">
         <div className="auth-left-content">

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Scrollbar styling - Dark theme */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -15,30 +15,11 @@
   background: #C4A47C;
 }
 
-/* Light theme scrollbar */
-:root.light-theme ::-webkit-scrollbar-track {
-  background: #f5f2ed;
-}
-:root.light-theme ::-webkit-scrollbar-thumb {
-  background: #d9cfc4;
-  border-radius: 3px;
-}
-:root.light-theme ::-webkit-scrollbar-thumb:hover {
-  background: #b8920f;
-}
-
 /* Date & file inputs on dark bg */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
 }
-:root.light-theme input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0);
-}
 select option {
   background: #163038;
   color: #fff;
-}
-:root.light-theme select option {
-  background: #f0ede6;
-  color: #2a2620;
 }
