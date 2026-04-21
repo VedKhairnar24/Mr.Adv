@@ -114,7 +114,7 @@ export default function AINotes({ caseId }) {
       if (currentSection) {
         elements.push(
           <div key={elements.length} className="mb-5">
-            <h3 className="text-xs font-bold tracking-wider text-gold mb-2">{currentSection}</h3>
+            <h3 className="text-base font-extrabold tracking-widest text-gold mb-3" style={{ fontSize: "14px", fontWeight: 800, letterSpacing: "0.5px", textTransform: "uppercase" }}>{currentSection}</h3>
             <div className="text-sm text-slate-300 leading-relaxed space-y-1">
               {currentItems.map((item, i) => (
                 <p key={i}>{item}</p>
