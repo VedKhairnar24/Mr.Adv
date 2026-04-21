@@ -2,7 +2,7 @@
   position: relative;
   min-height: 100vh;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
   overflow: hidden;
@@ -46,14 +46,14 @@
 .auth-right {
   position: relative;
   z-index: 1;
-  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .auth-left {
   background: var(--bg2);
   border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 60px;
@@ -698,6 +698,8 @@ input:-webkit-autofill:focus {
   .auth-page {
     grid-template-columns: 1fr;
     overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
   }
 
   .auth-left {
@@ -710,12 +712,14 @@ input:-webkit-autofill:focus {
     min-height: 100vh;
     padding: 60px 24px 40px;
     overflow: visible;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .auth-form-wrap,
   .register-page .auth-form-wrap {
     max-width: 100%;
+    width: 100%;
   }
 
   .auth-form-wrap::before,
@@ -729,5 +733,14 @@ input:-webkit-autofill:focus {
 
   .field-half {
     grid-column: 1 / -1;
+  }
+
+  .auth-title {
+    font-size: 32px;
+  }
+
+  .auth-left,
+  .auth-right {
+    padding: 40px 20px;
   }
 }

@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   return (
-    <div>
+    <div style={{ display: "flex", height: "100%", width: "100%" }}>
       <Sidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
