@@ -9,6 +9,7 @@ export default function AINotes({ caseId }) {
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [selectedDocuments, setSelectedDocuments] = useState([]);
+  const [caseText, setCaseText] = useState('');
 
   useEffect(() => {
     fetchNotes();
@@ -51,14 +52,16 @@ export default function AINotes({ caseId }) {
 
   const generateInsights = async () => {
     try {
-      if (selectedDocuments.length === 0) {
-        toast.error("Please select at least one document for AI analysis");
+      // Validate: at least one of document or text must be provided
+      if (selectedDocuments.length === 0 && (!caseText || caseText.trim().length === 0)) {
+        toast.error("Please either select documents or enter case information");
         return;
       }
 
       setGenerating(true);
       const payload = {
-        documentIds: selectedDocuments,
+        documentIds: selectedDocuments.length > 0 ? selectedDocuments : [],
+        caseText: caseText.trim() || null,
       };
       console.log("🚀 Sending AI request with:", payload);
       const res = await API.post(`/ai/generate/${caseId}`, payload);
@@ -178,6 +181,61 @@ export default function AINotes({ caseId }) {
 
   return (
     <div className="detail-card" style={{ marginTop: "32px", marginBottom: "32px" }}>
+      {/* SECTION 1: GENERATE AI THROUGH TEXT */}
+      <div
+        style={{
+          border: "1.5px solid rgba(200, 168, 75, 0.25)",
+          borderRadius: "8px",
+          padding: "20px",
+          marginBottom: "24px",
+          background: "linear-gradient(135deg, rgba(15, 23, 42, 0.5) 0%, rgba(30, 41, 59, 0.3) 100%)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(200, 168, 75, 0.1)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+          <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 012-2h6a2 2 0 012 2v14a2 2 0 01-2 2h-6a2 2 0 01-2-2V4zM3 7a2 2 0 012-2h.75C5.992 5 6 5.448 6 6v12c0 .552-.008 1-.25 1H5a2 2 0 01-2-2V7z" />
+          </svg>
+          <h3 className="detail-card-label" style={{ marginBottom: "0" }}>Generate AI through Text</h3>
+        </div>
+        <p className="text-xs text-slate-400" style={{ marginBottom: "16px", lineHeight: "1.6" }}>
+          Enter case information, facts, or relevant details here. AI will analyze the text and generate structured legal insights.
+        </p>
+
+        <textarea
+          value={caseText}
+          onChange={(e) => setCaseText(e.target.value)}
+          placeholder="Enter case background, incident details, statements, dates, facts, arguments, or any relevant information for AI analysis..."
+          style={{
+            width: "100%",
+            minHeight: "150px",
+            padding: "12px",
+            background: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "6px",
+            border: "1.5px solid rgba(200, 168, 75, 0.2)",
+            color: "#e2e8f0",
+            fontSize: "12px",
+            fontFamily: "Rajdhani, monospace",
+            lineHeight: "1.6",
+            resize: "vertical",
+            transition: "all 0.2s ease",
+            boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.2)",
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = "rgba(200, 168, 75, 0.4)";
+            e.target.style.boxShadow = "inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 10px rgba(200, 168, 75, 0.15)";
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = "rgba(200, 168, 75, 0.2)";
+            e.target.style.boxShadow = "inset 0 1px 3px rgba(0, 0, 0, 0.2)";
+          }}
+        />
+        <div style={{ marginTop: "8px", fontSize: "10px", color: "#64748b", textAlign: "right" }}>
+          {caseText.length} characters
+        </div>
+      </div>
+
+      {/* SECTION 2: SELECT DOCUMENTS FOR AI ANALYSIS */}
       <div
         style={{
           border: "1.5px solid rgba(200, 168, 75, 0.25)",
@@ -219,7 +277,7 @@ export default function AINotes({ caseId }) {
           </div>
         ) : (
           <div style={{ textAlign: "center", padding: "20px", color: "#94a3b8" }}>
-            <p className="text-sm">No documents uploaded yet. Upload documents first to use AI analysis.</p>
+            <p className="text-sm">No documents uploaded yet. You can still generate AI insights using the text input above.</p>
           </div>
         )}
       </div>
@@ -232,6 +290,7 @@ export default function AINotes({ caseId }) {
           <h2 className="detail-card-label" style={{ marginBottom: 0 }}>AI Legal Analysis</h2>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
+          {caseText.length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>📝 Text entered ({caseText.length} chars)</span>}
           {selectedDocuments.length > 0 && <span style={{ color: "var(--gold)", fontWeight: 600 }}>📄 {selectedDocuments.length} doc{selectedDocuments.length !== 1 ? 's' : ''} selected</span>}
         </div>
       </div>

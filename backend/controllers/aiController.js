@@ -64,7 +64,7 @@ Your response must always generate the following sections:
 exports.generateInsights = async (req, res) => {
   const { caseId } = req.params;
   const advocateId = req.advocateId;
-  const { documentIds } = req.body || {};
+  const { documentIds, caseText } = req.body || {};
 
   try {
     // Helper function for database queries
@@ -92,46 +92,59 @@ exports.generateInsights = async (req, res) => {
 
     const caseInfo = caseData[0];
 
-    // 2. Extract text from documents
-    if (!Array.isArray(documentIds) || documentIds.length === 0) {
+    // 2. Validate: at least one of documentIds or caseText must be provided
+    const hasDocuments = Array.isArray(documentIds) && documentIds.length > 0;
+    const hasText = caseText && typeof caseText === 'string' && caseText.trim().length > 0;
+
+    if (!hasDocuments && !hasText) {
       return res.status(400).json({
-        message: 'Please select at least one document for AI analysis.'
+        message: 'Please provide either case information text or select documents for AI analysis.'
       });
     }
 
-    let documentContent = '';
-    try {
-      const documents = await queryPromise(
-        `SELECT id, document_name, file_path FROM documents 
-         WHERE id IN (${documentIds.map(() => '?').join(',')}) 
-         AND case_id = ? 
-         LIMIT 10`,
-        [...documentIds, caseId]
-      );
+    let combinedContent = '';
 
-      for (const doc of documents) {
-        const text = await extractDocumentText(doc.file_path);
-        if (text) {
-          documentContent += `\n\n--- Document: ${doc.document_name} ---\n${text}`;
+    // 3. Extract text from documents (if provided)
+    if (hasDocuments) {
+      try {
+        const documents = await queryPromise(
+          `SELECT id, document_name, file_path FROM documents 
+           WHERE id IN (${documentIds.map(() => '?').join(',')}) 
+           AND case_id = ? 
+           LIMIT 10`,
+          [...documentIds, caseId]
+        );
+
+        for (const doc of documents) {
+          const text = await extractDocumentText(doc.file_path);
+          if (text) {
+            combinedContent += `\n\n--- Document: ${doc.document_name} ---\n${text}`;
+          }
         }
+      } catch (error) {
+        console.error('Error processing documents:', error.message);
+        return res.status(500).json({ message: 'Failed to process documents' });
       }
-    } catch (error) {
-      console.error('Error processing documents:', error.message);
-      return res.status(500).json({ message: 'Failed to process documents' });
     }
 
-    if (!documentContent || documentContent.trim().length === 0) {
+    // 4. Add case text (if provided)
+    if (hasText) {
+      combinedContent += `\n\n--- Case Information ---\n${caseText.trim()}`;
+    }
+
+    // 5. Validate that we have content after processing
+    if (!combinedContent || combinedContent.trim().length === 0) {
       return res.status(400).json({
-        message: 'Could not extract text from selected documents. Please try different files.'
+        message: 'Could not extract text from selected documents or text input is empty. Please try again.'
       });
     }
 
-    // 3. Generate insights using OpenRouter
-    console.log('🤖 Calling OpenRouter AI service for document analysis...');
+    // 6. Generate insights using OpenRouter
+    console.log('🤖 Calling OpenRouter AI service for analysis...');
     
-    const cleanedDocumentContent = cleanText(documentContent);
+    const cleanedContent = cleanText(combinedContent);
     
-    const aiResponse = await generateInsight(cleanedDocumentContent, {
+    const aiResponse = await generateInsight(cleanedContent, {
       temperature: 0.2,
       maxTokens: 2500,
       timeout: 30000,
@@ -141,10 +154,11 @@ exports.generateInsights = async (req, res) => {
 
     const aiContent = aiResponse.insight;
 
-    // 4. Save to database
+    // 7. Save to database
+    const noteType = hasDocuments && hasText ? 'combined_analysis' : (hasDocuments ? 'document_analysis' : 'text_analysis');
     const insertResult = await queryPromise(
       'INSERT INTO ai_notes (case_id, note_type, content, model_used, tokens_used) VALUES (?, ?, ?, ?, ?)',
-      [caseId, 'document_analysis', aiContent, aiResponse.provider, aiResponse.tokensUsed || 0]
+      [caseId, noteType, aiContent, aiResponse.provider, aiResponse.tokensUsed || 0]
     );
 
     res.json({
