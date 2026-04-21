@@ -17,7 +17,7 @@ function CaseTimeline({ caseId }) {
       const [hearingsRes, docsRes, notesRes] = await Promise.allSettled([
         API.get(`/hearings/${caseId}`),
         API.get(`/documents/case/${caseId}`),
-        API.get(`/notes/${caseId}`),
+        API.get(`/notes/case/${caseId}`),
       ]);
 
       const timeline = [];
@@ -60,7 +60,7 @@ function CaseTimeline({ caseId }) {
             id: `note-${n.id}`,
             type: "note",
             title: "Note Added",
-            description: n.note_text?.length > 100 ? n.note_text.substring(0, 100) + "..." : n.note_text,
+            description: n.content?.length > 100 ? n.content.substring(0, 100) + "..." : n.content,
             date: n.created_at,
             icon: "note",
           });
