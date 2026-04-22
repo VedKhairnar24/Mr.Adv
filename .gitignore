@@ -6,6 +6,11 @@
 # This is the root .gitignore file.
 # Each subdirectory (backend/, frontend/) has its own .gitignore file.
 
+# CENTRALIZED ENVIRONMENT FILE
+# All environment variables are now in the root .env file
+# Backend and frontend .env files have been removed
+# Subdirectories have their own .gitignore to ignore any local .env files
+
 # Subdirectories with their own .gitignore
 
 

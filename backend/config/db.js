@@ -1,13 +1,14 @@
 const mysql = require('mysql2');
 const mysqlPromise = require('mysql2/promise');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 // Create database connection (callback style)
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: process.env.DB_PASSWORD || '', // Uses DB_PASSWORD from .env file
-  database: 'advocate_case_db'
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'advocate_case_db'
 });
 
 // Test database connection
@@ -23,10 +24,10 @@ db.connect((err) => {
 
 // Create promise-based connection pool for async/await support
 const dbPromise = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: 'advocate_case_db',
+  database: process.env.DB_NAME || 'advocate_case_db',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
