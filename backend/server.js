@@ -46,8 +46,17 @@ const insightsRoutes = require('./routes/insightsRoutes');
 // Import test routes
 const testRoutes = require('./routes/testRoutes');
 
+// Import new notification routes
+const notificationRoutes = require('./src/routes/notificationRoutes');
+
 // Import error handler middleware
 const errorHandler = require('./middleware/errorMiddleware');
+
+// Import schedulers
+const HearingScheduler = require('./src/schedulers/hearingScheduler');
+
+// Import logger
+const logger = require('./src/config/logger');
 
 const app = express();
 
@@ -74,6 +83,7 @@ app.use('/api/courts', courtRoutes); // Court management routes
 app.use('/api/settings', settingsRoutes); // Settings routes
 app.use('/api/insights', insightsRoutes); // Dashboard insights with AI analysis routes
 app.use('/api/test', testRoutes); // Test endpoints for debugging
+app.use('/api/notifications', notificationRoutes); // Notification management routes (NEW)
 
 // Basic route test
 app.get('/', (req, res) => {
@@ -117,20 +127,20 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📍 Local: http://localhost:${PORT}`);
-  console.log(`📍 Auth API: http://localhost:${PORT}/api/auth`);
-  console.log(`📍 Clients API: http://localhost:${PORT}/api/clients`);
-  console.log(`📍 Cases API: http://localhost:${PORT}/api/cases`);
-  console.log(`📍 Documents API: http://localhost:${PORT}/api/documents`);
-  console.log(`📍 Evidence API: http://localhost:${PORT}/api/evidence`);
-  console.log(`📍 Hearings API: http://localhost:${PORT}/api/hearings`);
-  console.log(`📍 Notes API: http://localhost:${PORT}/api/notes`);
-  console.log(`📍 Dashboard API: http://localhost:${PORT}/api/dashboard`);
-  console.log(`📍 Files: http://localhost:${PORT}/uploads`);
-  console.log(`📍 Health: http://localhost:${PORT}/api/health`);
-  console.log(`📍 DB Test: http://localhost:${PORT}/api/test-db\n`);
-  console.log('Press Ctrl+C to stop the server\n');
+  logger.info(`\n🚀 Server running on port ${PORT}`);
+  logger.info(`📍 Local: http://localhost:${PORT}`);
+  logger.info(`📍 Auth API: http://localhost:${PORT}/api/auth`);
+  logger.info(`📍 Notifications API: http://localhost:${PORT}/api/notifications`);
+  logger.info(`📍 Files: http://localhost:${PORT}/uploads`);
+  logger.info(`📍 Health: http://localhost:${PORT}/api/health`);
+  logger.info(`📍 DB Test: http://localhost:${PORT}/api/test-db`);
+  logger.info('Press Ctrl+C to stop the server\n');
+
+  // Initialize schedulers
+  if (process.env.ENABLE_SCHEDULERS !== 'false') {
+    logger.info('Initializing background schedulers...');
+    HearingScheduler.initialize();
+  }
 });
 
 module.exports = app;
