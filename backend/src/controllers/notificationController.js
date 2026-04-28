@@ -1,5 +1,7 @@
 const NotificationService = require('../services/notificationService');
 const logger = require('../config/logger');
+const subscriptionRepo = require('../repositories/notificationSubscriptionRepository');
+const redis = require('../config/redis');
 
 class NotificationController {
   /**
@@ -168,6 +170,92 @@ class NotificationController {
         error: error.message,
       });
     }
+  }
+
+  /**
+   * Register (or refresh) Web Push subscription for current user
+   * POST /api/notifications/push/subscribe
+   */
+  static async subscribePush(req, res) {
+    try {
+      const userId = req.advocateId || req.user?.id;
+      const { endpoint, keys } = req.body || {};
+
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid subscription payload',
+        });
+      }
+
+      await subscriptionRepo.upsertSubscription({
+        userId,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        userAgent: req.headers['user-agent'] || null,
+      });
+
+      res.json({ success: true, message: 'Push subscription saved' });
+    } catch (error) {
+      logger.error('Error saving push subscription:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to save push subscription',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Server-Sent Events stream for in-app notifications (Redis pub/sub)
+   * GET /api/notifications/stream
+   */
+  static async stream(req, res) {
+    const userId = req.advocateId || req.user?.id;
+    const channel = `notifications:${userId}`;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    const sub = redis.duplicate();
+    let isClosed = false;
+
+    const safeWrite = (data) => {
+      if (isClosed) return;
+      res.write(`data: ${data}\n\n`);
+    };
+
+    try {
+      await sub.subscribe(channel);
+      safeWrite(JSON.stringify({ type: 'connected', channel }));
+
+      sub.on('message', (_chan, message) => {
+        safeWrite(message);
+      });
+    } catch (error) {
+      logger.error('Notification stream subscribe error:', error);
+      safeWrite(JSON.stringify({ type: 'error', message: 'stream_failed' }));
+      res.end();
+      isClosed = true;
+      try { await sub.quit(); } catch (_) {}
+      return;
+    }
+
+    const heartbeat = setInterval(() => {
+      safeWrite(JSON.stringify({ type: 'ping', ts: new Date().toISOString() }));
+    }, 25000);
+
+    req.on('close', async () => {
+      isClosed = true;
+      clearInterval(heartbeat);
+      try {
+        await sub.unsubscribe(channel);
+        await sub.quit();
+      } catch (_) {}
+    });
   }
 }
 

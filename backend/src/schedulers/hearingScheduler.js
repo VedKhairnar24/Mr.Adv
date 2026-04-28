@@ -4,6 +4,7 @@ const NotificationService = require('../services/notificationService');
 const HearingTrackingEngine = require('../services/hearingTrackingEngine');
 const PublicHearingSyncEngine = require('../services/publicHearingSyncEngine');
 const logger = require('../config/logger');
+const notificationRepository = require('../repositories/notificationRepository');
 
 class HearingScheduler {
   /**
@@ -82,8 +83,8 @@ class HearingScheduler {
         FROM hearings h
         JOIN cases c ON h.case_id = c.id
         JOIN advocates a ON c.advocate_id = a.id
-        WHERE h.hearing_date BETWEEN DATE_ADD(NOW(), INTERVAL 24 HOUR) 
-                                 AND DATE_ADD(NOW(), INTERVAL 48 HOUR)
+        WHERE CONCAT(h.hearing_date, ' ', COALESCE(h.hearing_time, '00:00:00')) BETWEEN NOW()
+                                 AND DATE_ADD(NOW(), INTERVAL 72 HOUR)
           AND h.status = 'Scheduled'
           AND a.is_active = TRUE
       `;
@@ -92,7 +93,26 @@ class HearingScheduler {
 
       logger.info(`Found ${hearings.length} upcoming hearings to remind`);
 
+      const prefCache = new Map(); // userId -> preferences
+
       for (const hearing of hearings) {
+        const hearingDateTime = new Date(`${hearing.hearing_date} ${hearing.hearing_time || '00:00:00'}`);
+        const now = new Date();
+        const hoursUntilHearing = (hearingDateTime - now) / (1000 * 60 * 60);
+        if (hoursUntilHearing <= 0) continue;
+
+        let pref = prefCache.get(hearing.advocate_id);
+        if (pref === undefined) {
+          pref = await notificationRepository.getPreferences(hearing.advocate_id);
+          prefCache.set(hearing.advocate_id, pref || null);
+        }
+
+        const prefHours = Math.max(1, Number(pref?.hearing_reminder_hours ?? 24));
+        // Scheduler runs hourly; only fire when we're within this hour's window.
+        const shouldSendStandard = hoursUntilHearing <= prefHours && hoursUntilHearing > prefHours - 1;
+
+        if (!shouldSendStandard) continue;
+
         // Check if reminder already sent (avoid duplicates)
         const reminderCheck = await db.promise.query(
           `SELECT id FROM notifications 

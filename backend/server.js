@@ -58,6 +58,7 @@ const errorHandler = require('./middleware/errorMiddleware');
 
 // Import schedulers
 const HearingScheduler = require('./src/schedulers/hearingScheduler');
+const NotificationQueueWorker = require('./src/services/notificationQueueWorker');
 
 // Import logger
 const logger = require('./src/config/logger');
@@ -146,6 +147,7 @@ app.listen(PORT, () => {
   if (process.env.ENABLE_SCHEDULERS !== 'false') {
     logger.info('Initializing background schedulers...');
     HearingScheduler.initialize();
+    NotificationQueueWorker.initialize();
   }
 });
 

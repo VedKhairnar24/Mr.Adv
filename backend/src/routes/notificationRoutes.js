@@ -9,6 +9,9 @@ router.use(verifyToken);
 // Get all notifications
 router.get('/', notificationController.getNotifications);
 
+// Real-time stream (SSE)
+router.get('/stream', notificationController.stream);
+
 // Get unread count
 router.get('/unread-count', notificationController.getUnreadCount);
 
@@ -23,5 +26,8 @@ router.get('/preferences', notificationController.getPreferences);
 
 // Update notification preferences
 router.put('/preferences', notificationController.updatePreferences);
+
+// Push subscription
+router.post('/push/subscribe', notificationController.subscribePush);
 
 module.exports = router;

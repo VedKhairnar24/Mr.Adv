@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:notifications": "node src/services/notificationPriority.spec.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +26,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13",
     "pdf-parse": "^2.4.5",
+    "web-push": "^3.6.7",
     "winston": "^3.13.0"
   },
   "devDependencies": {

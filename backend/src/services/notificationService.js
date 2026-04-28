@@ -2,6 +2,8 @@ const notificationRepository = require('../repositories/notificationRepository')
 const emailService = require('./emailService');
 const redis = require('../config/redis');
 const logger = require('../config/logger');
+const notificationJobRepository = require('../repositories/notificationJobRepository');
+const { derivePriority, priorityScore } = require('./notificationPriority');
 
 class NotificationService {
   /**
@@ -9,6 +11,14 @@ class NotificationService {
    */
   static async createNotification(data) {
     try {
+      const now = new Date();
+      const priority = derivePriority({
+        type: data.type,
+        explicitPriority: data.priority,
+        now,
+        eventTime: data.event_time,
+      });
+
       // Save to database
       const notification = await notificationRepository.create({
         user_id: data.user_id,
@@ -17,7 +27,7 @@ class NotificationService {
         message: data.message,
         related_type: data.related_type || null,
         related_id: data.related_id || null,
-        priority: data.priority || 'medium',
+        priority,
         is_read: false,
         delivery_status: 'pending',
       });
@@ -28,8 +38,26 @@ class NotificationService {
         JSON.stringify(notification)
       );
 
-      // Check if email should be sent
+      // Check preferences for channel deliveries (email/push)
       const preferences = await notificationRepository.getPreferences(data.user_id);
+
+      // Queue push delivery
+      if (preferences && preferences.push_enabled) {
+        try {
+          await notificationJobRepository.enqueue({
+            notificationId: notification.id,
+            userId: data.user_id,
+            channel: 'push',
+            runAt: now,
+            priorityScore: priorityScore(priority),
+            maxAttempts: 5,
+          });
+        } catch (e) {
+          logger.warn('Failed to enqueue push notification job', { error: e?.message });
+        }
+      }
+
+      // Queue email if configured
       if (preferences && preferences.email_enabled) {
         await this.queueEmailNotification(notification);
       }
@@ -166,6 +194,10 @@ class NotificationService {
    */
   static async createHearingReminder(hearing) {
     try {
+      const eventTime = hearing.hearing_date
+        ? new Date(`${hearing.hearing_date} ${hearing.hearing_time || '00:00:00'}`)
+        : null;
+
       await this.createNotification({
         user_id: hearing.advocate_id,
         type: 'hearing_reminder',
@@ -174,6 +206,7 @@ class NotificationService {
         related_type: 'hearing',
         related_id: hearing.id,
         priority: 'high',
+        event_time: eventTime,
       });
 
       // Send email if configured
@@ -198,6 +231,8 @@ class NotificationService {
    */
   static async createDeadlineReminder(task) {
     try {
+      const eventTime = task.due_date ? new Date(task.due_date) : null;
+
       await this.createNotification({
         user_id: task.assigned_to,
         type: 'deadline_approaching',
@@ -206,6 +241,7 @@ class NotificationService {
         related_type: 'task',
         related_id: task.id,
         priority: task.priority === 'urgent' ? 'urgent' : 'high',
+        event_time: eventTime,
       });
 
       // Send email if configured
