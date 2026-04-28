@@ -9,6 +9,36 @@ const logger = require('../src/config/logger');
  */
 
 class CaseLookupService {
+  isDummyCacheRow(row) {
+    if (!row) return false;
+    const pet = String(row.petitioner_name || '').toLowerCase();
+    const res = String(row.respondent_name || '').toLowerCase();
+    const court = String(row.court_name || '').toLowerCase();
+    const district = String(row.court_district || '').toLowerCase();
+    const state = String(row.court_state || '').toLowerCase();
+    const desc = String(row.case_description || '').toLowerCase();
+    const cnr = String(row.cnr_number || '').toUpperCase();
+
+    const bannedCnrs = new Set(['MHAU030080742026', 'DLHI040090852025', 'BLRU050100962024']);
+
+    return (
+      pet.includes('test petitioner') ||
+      res.includes('test respondent') ||
+      court.includes('test city') ||
+      district.includes('test district') ||
+      state.includes('test state') ||
+      desc.includes('demonstration') ||
+      bannedCnrs.has(cnr)
+    );
+  }
+
+  async deleteCacheRow(id) {
+    if (!id) return;
+    return new Promise((resolve) => {
+      db.query('DELETE FROM case_lookup_cache WHERE id = ?', [id], () => resolve());
+    });
+  }
+
   /**
    * Search case by CNR number
    * CNR (Case Number Record) is a unique 16-digit identifier
@@ -20,28 +50,40 @@ class CaseLookupService {
       logger.info(`Searching case by CNR: ${cnrNumber}`);
 
       // Check cache first
-      const cached = await this.getFromCache({ cnr_number: cnrNumber });
+      let cached = await this.getFromCache({ cnr_number: cnrNumber });
+      if (this.isDummyCacheRow(cached)) {
+        logger.warn('Case lookup: ignoring dummy cache row', { cnr: cnrNumber, cache_id: cached?.id });
+        await this.deleteCacheRow(cached.id);
+        cached = null;
+      }
       if (cached && (Date.now() - new Date(cached.synced_at).getTime()) < 24 * 60 * 60 * 1000) {
-        logger.info('Returning cached result');
+        logger.info('Case lookup: returning fresh cache', { source: 'cache', cnr: cnrNumber });
         return { ...cached, cache_id: cached.id, source: 'cache' };
       }
 
-      // Fetch from external API (eCourts/NJDG)
+      // Fetch from configured live provider (legally compliant integration)
       const externalData = await this.fetchFromExternalAPI('cnr', cnrNumber);
 
       if (externalData) {
         // Save to cache
         const cacheId = await this.saveToCache(externalData);
-        return { ...externalData, cache_id: cacheId, source: 'external' };
+        logger.info('Case lookup: returning live result', { source: 'live', cnr: cnrNumber });
+        return { ...externalData, cache_id: cacheId, source: 'live' };
       }
 
-      // Fallback to mock data for development
-      const mockData = this.generateMockData('cnr', cnrNumber);
-      const cacheId = await this.saveToCache(mockData);
-      return { ...mockData, cache_id: cacheId, source: 'mock' };
+      // No mock/dummy fallback allowed. If cache exists but stale, return it explicitly as cache.
+      if (cached) {
+        logger.warn('Case lookup: live unavailable, returning stale cache', { source: 'cache', cnr: cnrNumber });
+        return { ...cached, cache_id: cached.id, source: 'cache', is_stale: true };
+      }
+
+      const err = new Error('Live case data unavailable');
+      err.statusCode = 503;
+      throw err;
 
     } catch (error) {
       logger.error(`Error searching by CNR: ${error.message}`);
+      if (error && error.statusCode) throw error;
       throw new Error(`Failed to search case by CNR: ${error.message}`);
     }
   }
@@ -57,9 +99,14 @@ class CaseLookupService {
       logger.info(`Searching case by number: ${caseNumber}`);
 
       // Check cache first
-      const cached = await this.getFromCache({ case_number: caseNumber, court_name: courtName });
+      let cached = await this.getFromCache({ case_number: caseNumber, court_name: courtName });
+      if (this.isDummyCacheRow(cached)) {
+        logger.warn('Case lookup: ignoring dummy cache row', { case_number: caseNumber, cache_id: cached?.id });
+        await this.deleteCacheRow(cached.id);
+        cached = null;
+      }
       if (cached && (Date.now() - new Date(cached.synced_at).getTime()) < 24 * 60 * 60 * 1000) {
-        logger.info('Returning cached result');
+        logger.info('Case lookup: returning fresh cache', { source: 'cache', case_number: caseNumber });
         return { ...cached, cache_id: cached.id, source: 'cache' };
       }
 
@@ -68,16 +115,22 @@ class CaseLookupService {
 
       if (externalData) {
         const cacheId = await this.saveToCache(externalData);
-        return { ...externalData, cache_id: cacheId, source: 'external' };
+        logger.info('Case lookup: returning live result', { source: 'live', case_number: caseNumber });
+        return { ...externalData, cache_id: cacheId, source: 'live' };
       }
 
-      // Fallback to mock data
-      const mockData = this.generateMockData('case_number', caseNumber, courtName);
-      const cacheId = await this.saveToCache(mockData);
-      return { ...mockData, cache_id: cacheId, source: 'mock' };
+      if (cached) {
+        logger.warn('Case lookup: live unavailable, returning stale cache', { source: 'cache', case_number: caseNumber });
+        return { ...cached, cache_id: cached.id, source: 'cache', is_stale: true };
+      }
+
+      const err = new Error('Live case data unavailable');
+      err.statusCode = 503;
+      throw err;
 
     } catch (error) {
       logger.error(`Error searching by case number: ${error.message}`);
+      if (error && error.statusCode) throw error;
       throw new Error(`Failed to search case by number: ${error.message}`);
     }
   }
@@ -91,38 +144,57 @@ class CaseLookupService {
    */
   async fetchFromExternalAPI(searchType, searchValue, courtName = '') {
     try {
-      // NOTE: This is where you would integrate with actual Indian judicial APIs
-      // eCourts Services: https://ecourts.gov.in/
-      // National Judicial Data Grid: https://njdg.ecourts.gov.in/
-      
-      // For production, you would need:
-      // 1. API access credentials from eCourts
-      // 2. Proper API endpoints and authentication
-      // 3. Rate limiting and error handling
+      // IMPORTANT (2026): Official portals commonly require CAPTCHA and do not expose
+      // open public APIs for automated scraping. This app only supports "live" lookup
+      // via a configured, legally compliant provider (official API access or approved aggregator).
+      //
+      // Configure one of these options in .env:
+      // - COURT_DATA_PROVIDER_URL (recommended): your adapter endpoint
+      // - ECOURTS_API_BASE_URL (+ optional token) for an official integration you control
 
-      // Example integration (commented - requires actual API access):
-      /*
-      const response = await axios.post('https://api.ecourts.gov.in/case-search', {
+      const providerUrl = process.env.COURT_DATA_PROVIDER_URL;
+      const ecourtsBase = process.env.ECOURTS_API_BASE_URL;
+
+      if (!providerUrl && !ecourtsBase) {
+        return null;
+      }
+
+      const payload = {
         search_type: searchType,
         search_value: searchValue,
-        court_name: courtName,
-        api_key: process.env.ECOURTS_API_KEY
-      }, {
+        court_name: courtName || '',
+      };
+
+      // Generic adapter (recommended): your own server-side integration
+      if (providerUrl) {
+        const resp = await axios.post(providerUrl, payload, {
+          timeout: 20000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': process.env.COURT_DATA_PROVIDER_TOKEN
+              ? `Bearer ${process.env.COURT_DATA_PROVIDER_TOKEN}`
+              : undefined,
+          },
+        });
+        if (!resp?.data) return null;
+        return this.normalizeExternalData(resp.data);
+      }
+
+      // Optional: official eCourts API (only if you have credentials + endpoint)
+      const endpoint = process.env.ECOURTS_CASE_SEARCH_PATH || '/case-search';
+      const resp = await axios.post(`${ecourtsBase}${endpoint}`, payload, {
+        timeout: 20000,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ECOURTS_API_TOKEN}`
+          'Authorization': process.env.ECOURTS_API_TOKEN ? `Bearer ${process.env.ECOURTS_API_TOKEN}` : undefined,
+          'X-Api-Key': process.env.ECOURTS_API_KEY || undefined,
         },
-        timeout: 10000
       });
-
-      return this.normalizeExternalData(response.data);
-      */
-
-      // Return null to trigger mock data fallback
-      return null;
+      if (!resp?.data) return null;
+      return this.normalizeExternalData(resp.data);
 
     } catch (error) {
-      logger.warn(`External API fetch failed: ${error.message}`);
+      logger.warn(`Live case lookup failed: ${error.message}`);
       return null;
     }
   }
@@ -158,189 +230,6 @@ class CaseLookupService {
       hearings: rawData.hearings || rawData.HEARINGS || [],
       orders: rawData.orders || rawData.ORDERS || [],
       raw_response: rawData
-    };
-  }
-
-  /**
-   * Generate mock data for development/testing
-   * @param {string} searchType - Search type
-   * @param {string} searchValue - Search value
-   * @param {string} courtName - Court name
-   * @returns {Object} Mock case data
-   */
-  generateMockData(searchType, searchValue, courtName = '') {
-    const mockCases = {
-      'MHAU030080742026': {
-        cnr_number: 'MHAU030080742026',
-        case_number: 'CS/1234/2024',
-        case_type: 'Civil Suit',
-        case_status: 'Pending',
-        court_name: 'District Court - Mumbai',
-        court_district: 'Mumbai',
-        court_state: 'Maharashtra',
-        filing_date: '2024-01-15',
-        registration_date: '2024-01-16',
-        case_category: 'Property Dispute',
-        acting_label: 'Civil',
-        petitioner_name: 'Rajesh Kumar',
-        respondent_name: 'Amit Sharma',
-        advocate_name: 'Adv. Suresh Menon',
-        judge_name: 'Justice R.K. Desai',
-        next_hearing_date: '2026-05-15',
-        last_hearing_date: '2026-03-20',
-        case_description: 'Property dispute regarding boundary demarcation between adjacent plots',
-        proceedings: 'Arguments heard, evidence submission pending',
-        hearings: [
-          {
-            hearing_id: 'MHAU030080742026-2026-03-20',
-            hearing_date: '2026-03-20',
-            hearing_time: '10:30:00',
-            court_name: 'District Court - Mumbai',
-            court_hall: 'Court Hall A',
-            judge_name: 'Justice R.K. Desai',
-            stage: 'Evidence',
-            status: 'Adjourned',
-            listing_type: 'Regular',
-          },
-          {
-            hearing_id: 'MHAU030080742026-2026-05-15',
-            hearing_date: '2026-05-15',
-            hearing_time: '10:30:00',
-            court_name: 'District Court - Mumbai',
-            court_hall: 'Court Hall A',
-            judge_name: 'Justice R.K. Desai',
-            stage: 'Evidence',
-            status: 'Scheduled',
-            listing_type: 'Regular',
-          }
-        ],
-        orders: [
-          {
-            order_id: 'MHAU030080742026-ORDER-2026-03-20',
-            order_date: '2026-03-20',
-            summary: 'Matter adjourned. Next date fixed for 15/05/2026.',
-            document_url: null
-          }
-        ]
-      },
-      'DLHI040090852025': {
-        cnr_number: 'DLHI040090852025',
-        case_number: 'CR/5678/2024',
-        case_type: 'Criminal Case',
-        case_status: 'Active',
-        court_name: 'Sessions Court - Delhi',
-        court_district: 'New Delhi',
-        court_state: 'Delhi',
-        filing_date: '2024-02-20',
-        registration_date: '2024-02-21',
-        case_category: 'Bail Application',
-        acting_label: 'Criminal',
-        petitioner_name: 'State of Delhi',
-        respondent_name: 'Priya Singh',
-        advocate_name: 'Adv. Ramesh Gupta',
-        judge_name: 'Justice S.M. Khan',
-        next_hearing_date: '2026-05-10',
-        last_hearing_date: '2026-04-01',
-        case_description: 'Bail application in criminal case under Section 498A',
-        proceedings: 'Evidence examination in progress',
-        hearings: [
-          {
-            hearing_id: 'DLHI040090852025-2026-04-01',
-            hearing_date: '2026-04-01',
-            hearing_time: '14:00:00',
-            court_name: 'Sessions Court - Delhi',
-            court_hall: 'Court Hall B',
-            judge_name: 'Justice S.M. Khan',
-            stage: 'Argument',
-            status: 'Adjourned',
-            listing_type: 'Regular',
-          },
-          {
-            hearing_id: 'DLHI040090852025-2026-05-10',
-            hearing_date: '2026-05-10',
-            hearing_time: '14:00:00',
-            court_name: 'Sessions Court - Delhi',
-            court_hall: 'Court Hall B',
-            judge_name: 'Justice S.M. Khan',
-            stage: 'Argument',
-            status: 'Scheduled',
-            listing_type: 'Urgent',
-          }
-        ],
-        orders: []
-      },
-      'CS/5678/2024': {
-        cnr_number: 'DLHI040090852025',
-        case_number: 'CS/5678/2024',
-        case_type: 'Civil Suit',
-        case_status: 'Active',
-        court_name: courtName || 'High Court of Delhi',
-        court_district: 'New Delhi',
-        court_state: 'Delhi',
-        filing_date: '2024-02-20',
-        registration_date: '2024-02-21',
-        case_category: 'Contract Dispute',
-        acting_label: 'Civil',
-        petitioner_name: 'M/s ABC Corporation',
-        respondent_name: 'XYZ Enterprises',
-        advocate_name: 'Adv. Priya Singh',
-        judge_name: 'Justice S.M. Khan',
-        next_hearing_date: '2026-05-10',
-        last_hearing_date: '2026-04-01',
-        case_description: 'Breach of contract claim for supply agreement violation',
-        proceedings: 'Evidence examination in progress',
-        hearings: [
-          {
-            hearing_id: 'DLHI040090852025-2026-05-10',
-            hearing_date: '2026-05-10',
-            hearing_time: '11:00:00',
-            court_name: courtName || 'High Court of Delhi',
-            court_hall: 'Court Room 3',
-            judge_name: 'Justice S.M. Khan',
-            stage: 'Evidence',
-            status: 'Scheduled',
-            listing_type: 'Regular',
-          }
-        ],
-        orders: []
-      }
-    };
-
-    // Return matching mock data or generate generic response
-    return mockCases[searchValue] || {
-      cnr_number: searchType === 'cnr' ? searchValue : `${courtName.substring(0, 4).toUpperCase().replace(/\s/g, '')}${Date.now().toString().slice(-12)}`,
-      case_number: searchType === 'case_number' ? searchValue : `CS/${Math.floor(Math.random() * 9999)}/2024`,
-      case_type: 'Civil Suit',
-      case_status: 'Pending',
-      court_name: courtName || 'District Court - Test City',
-      court_district: 'Test District',
-      court_state: 'Test State',
-      filing_date: '2024-03-01',
-      registration_date: '2024-03-02',
-      case_category: 'General Civil',
-      acting_label: 'Civil',
-      petitioner_name: 'Test Petitioner',
-      respondent_name: 'Test Respondent',
-      advocate_name: 'Test Advocate',
-      judge_name: 'Test Judge',
-      next_hearing_date: '2026-06-01',
-      last_hearing_date: '2026-04-15',
-      case_description: 'Test case description for demonstration',
-      proceedings: 'Initial proceedings',
-      hearings: [
-        {
-          hearing_id: `${searchValue}-NEXT`,
-          hearing_date: '2026-06-01',
-          hearing_time: '10:00:00',
-          court_name: courtName || 'District Court - Test City',
-          court_hall: 'Court Hall 1',
-          judge_name: 'Test Judge',
-          stage: 'Filing',
-          status: 'Scheduled',
-          listing_type: 'Regular'
-        }
-      ],
-      orders: []
     };
   }
 

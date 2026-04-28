@@ -46,7 +46,7 @@ exports.searchByCNR = async (req, res) => {
 
   } catch (error) {
     logger.error(`CNR search error: ${error.message}`);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: error.message
     });
@@ -80,7 +80,7 @@ exports.searchByCaseNumber = async (req, res) => {
 
   } catch (error) {
     logger.error(`Case number search error: ${error.message}`);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: error.message
     });

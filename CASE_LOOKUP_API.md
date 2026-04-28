@@ -472,50 +472,30 @@ The system is designed to work with:
 1. **eCourts Services** - https://ecourts.gov.in/
 2. **National Judicial Data Grid (NJDG)** - https://njdg.ecourts.gov.in/
 
-### Mock Data Mode
+### Live Data Only (No Dummy Fallback)
 
-Currently, the system uses mock data for development and testing. To enable real API integration:
+This module **does not return mocked/demo case data**.
 
-1. **Obtain API Access**
-   - Register with eCourts services
-   - Get API credentials
-   - Review API documentation
+To enable live lookup, configure a legally compliant provider in `.env`:
 
-2. **Update Service**
-   Edit `backend/services/caseLookupService.js`:
-   ```javascript
-   async fetchFromExternalAPI(searchType, searchValue, courtName = '') {
-     // Uncomment and configure the API call
-     const response = await axios.post('https://api.ecourts.gov.in/case-search', {
-       search_type: searchType,
-       search_value: searchValue,
-       court_name: courtName,
-       api_key: process.env.ECOURTS_API_KEY
-     }, {
-       headers: {
-         'Authorization': `Bearer ${process.env.ECOURTS_API_TOKEN}`
-       }
-     });
-     
-     return this.normalizeExternalData(response.data);
-   }
-   ```
+1. **Recommended (Adapter URL)**
+   - Set `COURT_DATA_PROVIDER_URL` to your own server-side adapter endpoint.
+   - Optionally set `COURT_DATA_PROVIDER_TOKEN` for auth.
 
-3. **Data Normalization**
-   The `normalizeExternalData()` method maps external API responses to the internal format.
+2. **Optional (Official/Partner API)**
+   - Set `ECOURTS_API_BASE_URL`
+   - Optionally set `ECOURTS_CASE_SEARCH_PATH`, `ECOURTS_API_TOKEN`, `ECOURTS_API_KEY`
+
+If live lookup is unavailable and there is no cached record, the API returns:
+`"Live case data unavailable"`.
 
 ---
 
 ## Testing
 
-### Test CNR Numbers (Mock Data)
-- `MHAU030080742026` - Property dispute case (Mumbai)
-- `DLHI040090852025` - Criminal case (Delhi)
-- Any valid format (4 letters + 12 digits) - Generates random mock data
+### Test Values
 
-### Test Case Numbers (Mock Data)
-- `CS/5678/2024` - Contract dispute case
-- Any format - Generates random mock data
+Use **real** CNR/Case Number values from public court records.
 
 ### Manual Testing
 
