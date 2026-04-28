@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import API from "../services/api";
-import AddHearing from "../components/AddHearing";
 import HearingList from "../components/HearingList";
 import DocumentList from "../components/DocumentList";
 import CaseTimeline from "../components/CaseTimeline";
@@ -45,6 +44,8 @@ export default function CaseDetail() {
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
   const statusClass = useMemo(() => {
     const status = (caseData?.status || "").toLowerCase();
@@ -70,8 +71,18 @@ export default function CaseDetail() {
     }
   };
 
+  const fetchSyncStatus = async () => {
+    try {
+      const res = await API.get(`/hearings/sync/status/${id}`);
+      setSyncStatus(res.data?.data || null);
+    } catch {
+      setSyncStatus(null);
+    }
+  };
+
   useEffect(() => {
     fetchCase();
+    fetchSyncStatus();
   }, [id]);
 
   const updateStatus = async (nextStatus) => {
@@ -98,6 +109,19 @@ export default function CaseDetail() {
       navigate("/cases");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete case");
+    }
+  };
+
+  const triggerSync = async () => {
+    try {
+      setSyncing(true);
+      await API.post(`/hearings/sync/trigger/${id}`);
+      toast.success("Synced hearings from public data");
+      fetchSyncStatus();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Sync failed");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -218,8 +242,33 @@ export default function CaseDetail() {
         </main>
 
         <aside>
-          <AddHearing caseId={id} />
-          <div style={{ height: "20px" }} />
+          <section className="detail-card" style={{ padding: "18px 24px", marginBottom: "20px" }}>
+            <div className="detail-card-label">Hearing Sync</div>
+            <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "8px", lineHeight: 1.5 }}>
+              Hearings are auto-fetched from public Indian judicial case data for cases added via CNR / case number.
+            </p>
+            <div style={{ marginTop: "12px", display: "grid", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "12px", color: "var(--muted)" }}>
+                <span>Last sync</span>
+                <span style={{ color: "var(--white)" }}>
+                  {syncStatus?.last_synced_at ? new Date(syncStatus.last_synced_at).toLocaleString() : "—"}
+                </span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "12px", color: "var(--muted)" }}>
+                <span>Public hearings</span>
+                <span style={{ color: "var(--white)" }}>{syncStatus?.public_hearings ?? "—"}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={syncing}
+              onClick={triggerSync}
+              style={{ width: "100%", marginTop: "14px", height: "44px", minHeight: "44px" }}
+            >
+              {syncing ? "Syncing..." : "Sync now"}
+            </button>
+          </section>
           <HearingList caseId={id} />
         </aside>
       </div>

@@ -42,8 +42,9 @@ exports.getDashboard = (req, res) => {
         FROM hearings
         JOIN cases ON hearings.case_id = cases.id
         WHERE cases.advocate_id = ?
-        AND hearing_date >= CURDATE()
-        ORDER BY hearing_date ASC
+        AND hearings.hearing_date >= CURDATE()
+        AND hearings.status NOT IN ('Cancelled', 'Completed')
+        ORDER BY hearings.hearing_date ASC, hearings.hearing_time ASC
         LIMIT 5
       `;
 

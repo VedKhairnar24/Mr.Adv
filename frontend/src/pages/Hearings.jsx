@@ -43,24 +43,12 @@ function CalendarIcon() {
 
 export default function Hearings() {
   const [hearings, setHearings] = useState([]);
-  const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // Form state
-  const [form, setForm] = useState({
-    case_id: "", hearing_date: "", hearing_time: "", court_name: "",
-    judge_name: "", stage: "", notes: "", next_hearing_date: ""
-  });
-  const [submitting, setSubmitting] = useState(false);
-
-  const stageOptions = ["Filing", "Evidence", "Argument", "Judgment", "Cross-Examination", "Mediation", "Other"];
-
   useEffect(() => {
     fetchHearings();
-    fetchCases();
   }, []);
 
   const fetchHearings = async () => {
@@ -74,45 +62,17 @@ export default function Hearings() {
     }
   };
 
-  const fetchCases = async () => {
+  const triggerSyncForCase = async (caseId) => {
     try {
-      const res = await API.get("/cases/all");
-      setCases(res.data);
+      await API.post(`/hearings/sync/trigger/${caseId}`);
+      toast.success("Sync started");
+      fetchHearings();
     } catch (error) {
-      console.error("Error fetching cases:", error);
+      toast.error(error.response?.data?.message || "Sync failed");
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.case_id || !form.hearing_date) {
-      toast.error("Case and hearing date are required");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      await API.post("/hearings/add", form);
-      toast.success("Hearing added successfully!");
-      setForm({ case_id: "", hearing_date: "", hearing_time: "", court_name: "", judge_name: "", stage: "", notes: "", next_hearing_date: "" });
-      setShowModal(false);
-      fetchHearings();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add hearing");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const deleteHearing = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this hearing?")) return;
-    try {
-      await API.delete(`/hearings/${id}`);
-      toast.success("Hearing deleted");
-      fetchHearings();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete hearing");
-    }
-  };
+  // Manual hearing deletion is disabled (hearings are auto-synced from public data).
 
   const statusBadgeClass = (status = "") => {
     const value = status.toLowerCase();
@@ -193,12 +153,6 @@ export default function Hearings() {
     e.target.style.borderColor = "var(--border)";
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setShowModal(false);
-    }
-  };
-
   const weekStrip = [
     { day: "MON", date: "17", iso: "2026-03-17" },
     { day: "TUE", date: "18", iso: "2026-03-18" },
@@ -232,17 +186,25 @@ export default function Hearings() {
       <header className="app-header">
         <div className="app-header-title-wrap">
           <h1 className="app-header-title">Hearings</h1>
-          <p className="app-header-subtitle">Track all court dates and hearing schedules</p>
+          <p className="app-header-subtitle">Auto-synced from public Indian judicial case data</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn-primary"
-        >
-          + Add Hearing
-        </button>
       </header>
 
       <div className="app-body">
+      <div
+        style={{
+          marginBottom: "18px",
+          padding: "12px 14px",
+          border: "1px solid rgba(200,168,75,0.25)",
+          background: "rgba(200,168,75,0.06)",
+          borderRadius: "3px",
+          color: "var(--muted)",
+          fontFamily: "Rajdhani, sans-serif",
+          fontSize: "12px",
+        }}
+      >
+        Hearings are fetched automatically for cases added via CNR / case number. Manual hearing entry is disabled.
+      </div>
       {/* SECTION B: WEEK STRIP CALENDAR */}
       <section
         style={{
@@ -373,7 +335,7 @@ export default function Hearings() {
             <CalendarIcon />
           </div>
           <h3 className="empty-title" style={{ fontSize: "18px" }}>No hearings found</h3>
-          <p className="empty-text" style={{ fontSize: "12px" }}>Schedule a hearing to see it here</p>
+          <p className="empty-text" style={{ fontSize: "12px" }}>Import a case via CNR to auto-populate hearings</p>
         </div>
       ) : (
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
@@ -472,8 +434,13 @@ export default function Hearings() {
                           <span style={{ width: "13px", height: "13px" }}><EyeIcon /></span>
                           View
                         </Link>
-                        <button onClick={() => deleteHearing(h.id)} className="btn-danger" style={{ width: "34px", height: "34px", minHeight: "34px", padding: 0, justifyContent: "center" }} title="Delete hearing">
-                          <span style={{ width: "14px", height: "14px" }}><TrashIcon /></span>
+                        <button
+                          onClick={() => triggerSyncForCase(h.case_id)}
+                          className="btn-ghost"
+                          style={{ height: "34px", minHeight: "34px", padding: "0 12px", fontSize: "10px" }}
+                          title="Sync hearings for this case"
+                        >
+                          Sync
                         </button>
                       </div>
                     </td>
@@ -485,333 +452,6 @@ export default function Hearings() {
         </div>
       )}
       </div>
-
-      {/* Add Hearing Modal */}
-      {showModal && (
-        <div
-          onClick={handleOverlayClick}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(5,10,8,0.85)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-        >
-          <style>{`
-            @keyframes hearingModalIn {
-              from { opacity: 0; transform: translateY(16px) scale(0.98); }
-              to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-
-            .hearing-modal-card::-webkit-scrollbar {
-              width: 4px;
-            }
-
-            .hearing-modal-card::-webkit-scrollbar-thumb {
-              background: var(--border);
-              border-radius: 3px;
-            }
-
-            .hearing-modal-card::-webkit-scrollbar-track {
-              background: transparent;
-            }
-
-            .hearing-modal-field::placeholder,
-            .hearing-modal-textarea::placeholder {
-              color: var(--muted2);
-              font-family: Rajdhani, sans-serif;
-            }
-
-            .hearing-modal-field[type="date"],
-            .hearing-modal-field[type="time"] {
-              color-scheme: dark;
-            }
-
-            .hearing-modal-field[type="date"]::-webkit-calendar-picker-indicator,
-            .hearing-modal-field[type="time"]::-webkit-calendar-picker-indicator {
-              filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg);
-              cursor: pointer;
-              opacity: 0.7;
-            }
-          `}</style>
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="hearing-modal-card"
-            style={{
-              position: "relative",
-              width: "100%",
-              maxWidth: "560px",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "4px",
-              padding: "32px",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,168,75,0.08)",
-              animation: "hearingModalIn 0.25s ease-out",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: "12px",
-                left: "12px",
-                width: "20px",
-                height: "20px",
-                borderTop: "1px solid var(--gold)",
-                borderLeft: "1px solid var(--gold)",
-                opacity: 0.35,
-                pointerEvents: "none",
-              }}
-            />
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                bottom: "12px",
-                right: "12px",
-                width: "20px",
-                height: "20px",
-                borderBottom: "1px solid var(--gold)",
-                borderRight: "1px solid var(--gold)",
-                opacity: 0.35,
-                pointerEvents: "none",
-              }}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "28px",
-                paddingBottom: "20px",
-                borderBottom: "1px solid rgba(180,150,80,0.12)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ width: "3px", height: "28px", background: "var(--gold)", borderRadius: "2px", flexShrink: 0 }} />
-                <h2
-                  style={{
-                    fontFamily: "Cormorant Garamond, serif",
-                    fontSize: "26px",
-                    fontWeight: 700,
-                    color: "var(--white)",
-                    lineHeight: 1,
-                  }}
-                >
-                  Add Hearing
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "3px",
-                  background: "transparent",
-                  border: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--danger)";
-                  e.currentTarget.style.color = "var(--danger)";
-                  e.currentTarget.style.background = "rgba(192,57,43,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.color = "var(--muted)";
-                  e.currentTarget.style.background = "transparent";
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Case <span style={{ color: "var(--gold)", marginLeft: "2px" }}>*</span></label>
-                <select
-                  value={form.case_id}
-                  onChange={(e) => setForm({ ...form, case_id: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  style={selectStyle}
-                  required
-                >
-                  <option value="">Select Case</option>
-                  {cases.map((c) => (
-                    <option key={c.id} value={c.id}>{c.case_title} ({c.case_number})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "18px" }}>
-                <div>
-                  <label style={labelStyle}>Hearing Date <span style={{ color: "var(--gold)", marginLeft: "2px" }}>*</span></label>
-                  <input
-                    type="date"
-                    value={form.hearing_date}
-                    onChange={(e) => setForm({ ...form, hearing_date: e.target.value })}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    className="hearing-modal-field"
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Time</label>
-                  <input
-                    type="time"
-                    value={form.hearing_time}
-                    onChange={(e) => setForm({ ...form, hearing_time: e.target.value })}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    className="hearing-modal-field"
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Court Name</label>
-                <input
-                  type="text"
-                  value={form.court_name}
-                  onChange={(e) => setForm({ ...form, court_name: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  placeholder="e.g., District Court"
-                  className="hearing-modal-field"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Judge Name</label>
-                <input
-                  type="text"
-                  value={form.judge_name}
-                  onChange={(e) => setForm({ ...form, judge_name: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  placeholder="e.g., Justice Sharma"
-                  className="hearing-modal-field"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Stage</label>
-                <select
-                  value={form.stage}
-                  onChange={(e) => setForm({ ...form, stage: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  style={selectStyle}
-                >
-                  <option value="">Select Stage</option>
-                  {stageOptions.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Notes</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  placeholder="Brief note about the hearing..."
-                  className="hearing-modal-textarea"
-                  style={{
-                    ...inputStyle,
-                    height: "auto",
-                    minHeight: "96px",
-                    padding: "12px 14px",
-                    resize: "vertical",
-                    lineHeight: 1.6,
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 0 }}>
-                <label style={labelStyle}>Next Hearing Date</label>
-                <input
-                  type="date"
-                  value={form.next_hearing_date}
-                  onChange={(e) => setForm({ ...form, next_hearing_date: e.target.value })}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  className="hearing-modal-field"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  marginTop: "24px",
-                  paddingTop: "20px",
-                  borderTop: "1px solid rgba(180,150,80,0.12)",
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "24px",
-                    height: "1px",
-                    background: "var(--gold)",
-                    opacity: 0.6,
-                    marginRight: "4px",
-                  }}
-                />
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn-primary"
-                  style={buttonTextStyle}
-                >
-                  {submitting ? "Adding..." : "Add Hearing"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="btn-ghost"
-                  style={buttonTextStyle}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

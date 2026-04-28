@@ -23,7 +23,7 @@ class CaseLookupService {
       const cached = await this.getFromCache({ cnr_number: cnrNumber });
       if (cached && (Date.now() - new Date(cached.synced_at).getTime()) < 24 * 60 * 60 * 1000) {
         logger.info('Returning cached result');
-        return { ...cached, source: 'cache' };
+        return { ...cached, cache_id: cached.id, source: 'cache' };
       }
 
       // Fetch from external API (eCourts/NJDG)
@@ -60,7 +60,7 @@ class CaseLookupService {
       const cached = await this.getFromCache({ case_number: caseNumber, court_name: courtName });
       if (cached && (Date.now() - new Date(cached.synced_at).getTime()) < 24 * 60 * 60 * 1000) {
         logger.info('Returning cached result');
-        return { ...cached, source: 'cache' };
+        return { ...cached, cache_id: cached.id, source: 'cache' };
       }
 
       // Fetch from external API
@@ -153,6 +153,10 @@ class CaseLookupService {
       last_hearing_date: rawData.lastHearing || rawData.LAST_HEARING_DATE,
       case_description: rawData.description || rawData.DESCRIPTION,
       proceedings: rawData.proceedings || '',
+      // Expected public payload (when available): list of hearings/orders.
+      // Keeping both keys allows different upstream formats.
+      hearings: rawData.hearings || rawData.HEARINGS || [],
+      orders: rawData.orders || rawData.ORDERS || [],
       raw_response: rawData
     };
   }
@@ -185,7 +189,39 @@ class CaseLookupService {
         next_hearing_date: '2026-05-15',
         last_hearing_date: '2026-03-20',
         case_description: 'Property dispute regarding boundary demarcation between adjacent plots',
-        proceedings: 'Arguments heard, evidence submission pending'
+        proceedings: 'Arguments heard, evidence submission pending',
+        hearings: [
+          {
+            hearing_id: 'MHAU030080742026-2026-03-20',
+            hearing_date: '2026-03-20',
+            hearing_time: '10:30:00',
+            court_name: 'District Court - Mumbai',
+            court_hall: 'Court Hall A',
+            judge_name: 'Justice R.K. Desai',
+            stage: 'Evidence',
+            status: 'Adjourned',
+            listing_type: 'Regular',
+          },
+          {
+            hearing_id: 'MHAU030080742026-2026-05-15',
+            hearing_date: '2026-05-15',
+            hearing_time: '10:30:00',
+            court_name: 'District Court - Mumbai',
+            court_hall: 'Court Hall A',
+            judge_name: 'Justice R.K. Desai',
+            stage: 'Evidence',
+            status: 'Scheduled',
+            listing_type: 'Regular',
+          }
+        ],
+        orders: [
+          {
+            order_id: 'MHAU030080742026-ORDER-2026-03-20',
+            order_date: '2026-03-20',
+            summary: 'Matter adjourned. Next date fixed for 15/05/2026.',
+            document_url: null
+          }
+        ]
       },
       'DLHI040090852025': {
         cnr_number: 'DLHI040090852025',
@@ -206,7 +242,32 @@ class CaseLookupService {
         next_hearing_date: '2026-05-10',
         last_hearing_date: '2026-04-01',
         case_description: 'Bail application in criminal case under Section 498A',
-        proceedings: 'Evidence examination in progress'
+        proceedings: 'Evidence examination in progress',
+        hearings: [
+          {
+            hearing_id: 'DLHI040090852025-2026-04-01',
+            hearing_date: '2026-04-01',
+            hearing_time: '14:00:00',
+            court_name: 'Sessions Court - Delhi',
+            court_hall: 'Court Hall B',
+            judge_name: 'Justice S.M. Khan',
+            stage: 'Argument',
+            status: 'Adjourned',
+            listing_type: 'Regular',
+          },
+          {
+            hearing_id: 'DLHI040090852025-2026-05-10',
+            hearing_date: '2026-05-10',
+            hearing_time: '14:00:00',
+            court_name: 'Sessions Court - Delhi',
+            court_hall: 'Court Hall B',
+            judge_name: 'Justice S.M. Khan',
+            stage: 'Argument',
+            status: 'Scheduled',
+            listing_type: 'Urgent',
+          }
+        ],
+        orders: []
       },
       'CS/5678/2024': {
         cnr_number: 'DLHI040090852025',
@@ -227,7 +288,21 @@ class CaseLookupService {
         next_hearing_date: '2026-05-10',
         last_hearing_date: '2026-04-01',
         case_description: 'Breach of contract claim for supply agreement violation',
-        proceedings: 'Evidence examination in progress'
+        proceedings: 'Evidence examination in progress',
+        hearings: [
+          {
+            hearing_id: 'DLHI040090852025-2026-05-10',
+            hearing_date: '2026-05-10',
+            hearing_time: '11:00:00',
+            court_name: courtName || 'High Court of Delhi',
+            court_hall: 'Court Room 3',
+            judge_name: 'Justice S.M. Khan',
+            stage: 'Evidence',
+            status: 'Scheduled',
+            listing_type: 'Regular',
+          }
+        ],
+        orders: []
       }
     };
 
@@ -251,7 +326,21 @@ class CaseLookupService {
       next_hearing_date: '2026-06-01',
       last_hearing_date: '2026-04-15',
       case_description: 'Test case description for demonstration',
-      proceedings: 'Initial proceedings'
+      proceedings: 'Initial proceedings',
+      hearings: [
+        {
+          hearing_id: `${searchValue}-NEXT`,
+          hearing_date: '2026-06-01',
+          hearing_time: '10:00:00',
+          court_name: courtName || 'District Court - Test City',
+          court_hall: 'Court Hall 1',
+          judge_name: 'Test Judge',
+          stage: 'Filing',
+          status: 'Scheduled',
+          listing_type: 'Regular'
+        }
+      ],
+      orders: []
     };
   }
 
@@ -315,7 +404,33 @@ class CaseLookupService {
           logger.error(`Error saving to cache: ${err.message}`);
           return reject(err);
         }
-        resolve(result.insertId || result[0]?.id);
+        // mysql returns insertId=0 for ON DUPLICATE KEY UPDATE
+        if (result && result.insertId) return resolve(result.insertId);
+
+        // Find existing row id (prefer cnr_number, else case_number + court_name)
+        const cnr = caseData.cnr_number;
+        const caseNo = caseData.case_number;
+        const court = caseData.court_name || null;
+
+        if (cnr) {
+          return db.query(
+            'SELECT id FROM case_lookup_cache WHERE cnr_number = ? ORDER BY synced_at DESC LIMIT 1',
+            [cnr],
+            (e2, r2) => {
+              if (e2) return reject(e2);
+              resolve(r2 && r2[0] ? r2[0].id : null);
+            }
+          );
+        }
+
+        return db.query(
+          'SELECT id FROM case_lookup_cache WHERE case_number = ? AND (? IS NULL OR court_name = ?) ORDER BY synced_at DESC LIMIT 1',
+          [caseNo, court, court],
+          (e2, r2) => {
+            if (e2) return reject(e2);
+            resolve(r2 && r2[0] ? r2[0].id : null);
+          }
+        );
       });
     });
   }
@@ -329,6 +444,11 @@ class CaseLookupService {
     return new Promise((resolve, reject) => {
       let sql = 'SELECT * FROM case_lookup_cache WHERE 1=1';
       const values = [];
+
+      if (params.id) {
+        sql += ' AND id = ?';
+        values.push(params.id);
+      }
 
       if (params.cnr_number) {
         sql += ' AND cnr_number = ?';

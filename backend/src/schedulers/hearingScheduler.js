@@ -1,6 +1,8 @@
 const cron = require('node-cron');
 const db = require('../../config/db');
 const NotificationService = require('../services/notificationService');
+const HearingTrackingEngine = require('../services/hearingTrackingEngine');
+const PublicHearingSyncEngine = require('../services/publicHearingSyncEngine');
 const logger = require('../config/logger');
 
 class HearingScheduler {
@@ -27,6 +29,37 @@ class HearingScheduler {
         await this.checkTodaysHearings();
       } catch (error) {
         logger.error('Today hearings scheduler error:', error);
+      }
+    });
+
+    // Daily case monitoring: recompute next hearing state + detect schedule changes
+    // Runs at 00:10 server time.
+    cron.schedule('10 0 * * *', async () => {
+      try {
+        logger.info('Running daily hearing monitoring...');
+        await HearingTrackingEngine.runDailyCaseMonitoring();
+      } catch (error) {
+        logger.error('Daily hearing monitoring error:', error);
+      }
+    });
+
+    // Frequent change detection for near-term hearings (every 2 hours)
+    cron.schedule('0 */2 * * *', async () => {
+      try {
+        logger.info('Running hearing schedule change detection...');
+        await HearingTrackingEngine.detectScheduleChangesForUpcomingHearings();
+      } catch (error) {
+        logger.error('Hearing change detection error:', error);
+      }
+    });
+
+    // Poll public data for all saved external cases (every 6 hours)
+    cron.schedule('15 */6 * * *', async () => {
+      try {
+        logger.info('Running public hearing sync (polling)...');
+        await PublicHearingSyncEngine.syncAllExternalCases({ limit: 1000 });
+      } catch (error) {
+        logger.error('Public hearing sync error:', error);
       }
     });
 

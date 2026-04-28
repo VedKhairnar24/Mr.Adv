@@ -126,12 +126,42 @@ CREATE TABLE IF NOT EXISTS ai_jobs (
 -- Add is_active column to advocates table (if not exists)
 -- ============================================================================
 
-ALTER TABLE advocates 
-ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE AFTER password;
+-- NOTE: MySQL 8 does not support "ADD COLUMN IF NOT EXISTS" in all builds.
+-- Make this migration idempotent with information_schema checks + dynamic SQL.
 
-ALTER TABLE advocates 
-ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP NULL AFTER is_active;
+-- Add advocates.is_active if missing
+SET @col_is_active :=
+  (SELECT COUNT(*)
+   FROM information_schema.columns
+   WHERE table_schema = DATABASE()
+     AND table_name = 'advocates'
+     AND column_name = 'is_active');
 
+SET @sql_is_active := IF(
+  @col_is_active = 0,
+  'ALTER TABLE advocates ADD COLUMN is_active BOOLEAN DEFAULT TRUE AFTER password',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql_is_active;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add advocates.last_login_at if missing (after is_active)
+SET @col_last_login :=
+  (SELECT COUNT(*)
+   FROM information_schema.columns
+   WHERE table_schema = DATABASE()
+     AND table_name = 'advocates'
+     AND column_name = 'last_login_at');
+
+SET @sql_last_login := IF(
+  @col_last_login = 0,
+  'ALTER TABLE advocates ADD COLUMN last_login_at TIMESTAMP NULL AFTER is_active',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql_last_login;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 -- ============================================================================
 -- Sample Data for Testing
 -- ============================================================================

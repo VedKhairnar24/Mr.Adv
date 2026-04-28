@@ -4,7 +4,7 @@ const router = express.Router();
 const verifyToken = require('../middleware/authMiddleware');
 const hearingController = require('../controllers/hearingController');
 
-// POST /api/hearings/add - Add a hearing
+// Manual hearing creation is disabled (hearings are auto-synced from public data)
 router.post('/add', verifyToken, hearingController.addHearing);
 
 // GET /api/hearings/all - Get all hearings for advocate
