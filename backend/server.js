@@ -52,6 +52,7 @@ const caseLookupRoutes = require('./routes/caseLookupRoutes');
 // Import new notification routes
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const hearingSyncRoutes = require('./src/routes/hearingSyncRoutes');
+const hearingPrepRoutes = require('./src/routes/hearingPrepRoutes');
 
 // Import error handler middleware
 const errorHandler = require('./middleware/errorMiddleware');
@@ -91,6 +92,7 @@ app.use('/api/test', testRoutes); // Test endpoints for debugging
 app.use('/api/case-lookup', caseLookupRoutes); // Case lookup from Indian judicial databases
 app.use('/api/notifications', notificationRoutes); // Notification management routes (NEW)
 app.use('/api/hearings/sync', hearingSyncRoutes); // Public-data hearing sync routes
+app.use('/api/ai/hearing-prep', hearingPrepRoutes); // AI hearing preparation assistant
 
 // Basic route test
 app.get('/', (req, res) => {
