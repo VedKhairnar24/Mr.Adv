@@ -14,6 +14,7 @@ import Notes from './pages/Notes';
 import NoteForm from './pages/NoteForm';
 import NoteDetail from './pages/NoteDetail';
 import Landing from './pages/Landing';
+import CaseLookup from './pages/CaseLookup';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -59,6 +60,13 @@ function App() {
           <ProtectedRoute>
             <DashboardLayout>
               <CaseDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/case-lookup" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <CaseLookup />
             </DashboardLayout>
           </ProtectedRoute>
         } />

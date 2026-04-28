@@ -46,6 +46,9 @@ const insightsRoutes = require('./routes/insightsRoutes');
 // Import test routes
 const testRoutes = require('./routes/testRoutes');
 
+// Import case lookup routes
+const caseLookupRoutes = require('./routes/caseLookupRoutes');
+
 // Import new notification routes
 const notificationRoutes = require('./src/routes/notificationRoutes');
 
@@ -83,6 +86,7 @@ app.use('/api/courts', courtRoutes); // Court management routes
 app.use('/api/settings', settingsRoutes); // Settings routes
 app.use('/api/insights', insightsRoutes); // Dashboard insights with AI analysis routes
 app.use('/api/test', testRoutes); // Test endpoints for debugging
+app.use('/api/case-lookup', caseLookupRoutes); // Case lookup from Indian judicial databases
 app.use('/api/notifications', notificationRoutes); // Notification management routes (NEW)
 
 // Basic route test

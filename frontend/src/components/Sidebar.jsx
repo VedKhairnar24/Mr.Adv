@@ -60,6 +60,15 @@ function NotesIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
 function SettingsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -95,6 +104,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false }) {
     { path: "/dashboard", label: "Dashboard", icon: DashboardIcon },
     { path: "/clients", label: "Clients", icon: ClientsIcon },
     { path: "/cases", label: "Cases", icon: CasesIcon },
+    { path: "/case-lookup", label: "Case Lookup", icon: SearchIcon },
     { path: "/hearings", label: "Hearings", icon: HearingsIcon },
     { path: "/documents", label: "Documents", icon: DocumentsIcon },
     { path: "/notes", label: "Notes", icon: NotesIcon },
